@@ -1,0 +1,70 @@
+#ifndef SMF0_H
+#define SMF0_H
+
+#include <stdio.h>
+
+#define MIDIEVENT_SHORT_DATA_MAX 16
+#define MIDIEVENT_MAX 100000
+#define ABSOLUTE_TIME_MAX 999999999
+
+enum {
+  SMF0_KEY_C = 0,
+  SMF0_KEY_D = 2,
+  SMF0_KEY_E = 4,
+  SMF0_KEY_F = 5,
+  SMF0_KEY_G = 7,
+  SMF0_KEY_A = 9,
+  SMF0_KEY_B = 11,
+};
+
+enum {
+  SMF0_CC_BANKMSB = 0,
+  SMF0_CC_MODULATION = 1,
+  SMF0_CC_PORTAMENT_TIME = 5,
+  SMF0_CC_DATAMSB = 6,
+  SMF0_CC_VOLUME = 7,
+  SMF0_CC_PANPOT = 10,
+  SMF0_CC_EXPRESSION = 11,
+  SMF0_CC_DATALSB = 38,
+  SMF0_CC_HOLD = 64,
+  SMF0_CC_NRPNLSB = 98,
+  SMF0_CC_NRPNMSB = 99,
+  SMF0_CC_RPNLSB = 100,
+  SMF0_CC_RPNMSB = 101,
+  SMF0_CC_ALLNOTEOFF = 123,
+};
+
+
+
+typedef struct {
+  int absolute_time;
+  int datasize;
+  unsigned char data[MIDIEVENT_SHORT_DATA_MAX];
+} midievent_t;
+
+typedef struct {
+  int index;
+  int timebase;
+  int tracksize;
+  midievent_t events[MIDIEVENT_MAX];
+  midievent_t *sort_events[MIDIEVENT_MAX];
+} smf0_t;
+
+smf0_t *smf0_create();
+void smf0_destroy(smf0_t *s);
+void smf0_add_event_raw(smf0_t *s, int absolute_time, int type, int channel, int num_data, unsigned char *data);
+void smf0_add_noteoff(smf0_t *s, int absolute_time, int channel, int key, int velocity);
+void smf0_add_noteon(smf0_t *s, int absolute_time, int channel, int key, int velocity);
+void smf0_add_keypressure(smf0_t *s, int absolute_time, int channel, int key, int value);
+void smf0_add_controlchange(smf0_t *s, int absolute_time, int channel, int control, int value);
+void smf0_add_programchange(smf0_t *s, int absolute_time, int channel, int program);
+void smf0_add_channelpressure(smf0_t *s, int absolute_time, int channel, int value);
+void smf0_add_pitchbend(smf0_t *s, int absolute_time, int channel, int low, int high);
+void smf0_dump(smf0_t *s);
+int smf0_save(smf0_t *s, const char *filename);
+
+void smf0_add_note_ex(smf0_t *s, int absolute_time, int channel, int octave, int key, int sharp, float length, int velocity);
+int smf0_get_key(int octave, int key, int sharp);
+void smf0_add_note(smf0_t *s, int absolute_time, int channel, int key, float length, int velocity);
+
+#endif

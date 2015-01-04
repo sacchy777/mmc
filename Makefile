@@ -1,8 +1,8 @@
 OBJDIR	= obj
 SRCDIR	= src
 INCDIR	= include
-PROGRAM = midifile_test
-_OBJS	= midifile_test.o 
+PROGRAM = mmc_test 
+_OBJS	= mmc_test.o mmc.o smf0.o 
 OBJS	= $(patsubst %,$(OBJDIR)/%,$(_OBJS))
 CC	= gcc
 WINDRES	= windres
