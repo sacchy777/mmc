@@ -60,12 +60,12 @@ namespace Mmcg
   string program_name = "\"c:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"";
   string option = "/play";
    */
-            string program_name = "\"c:\\Program Files (x86)\\YAMAHA\\MidRadio Player\\MidRadio.exe\"";
-             string option = "";
-            /*
+            //string program_name = "\"c:\\Program Files (x86)\\YAMAHA\\MidRadio Player\\MidRadio.exe\"";
+            // string option = "";
+            
             string option = "--no-repeat";
             string program_name = "ctplay.exe";
-            */
+            
              string filename = "temp.mid";
             try
             {
@@ -113,6 +113,11 @@ namespace Mmcg
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             close_player();
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
 
     }
