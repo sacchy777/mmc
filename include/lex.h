@@ -64,6 +64,8 @@ enum {
   kTokenMinus,
   kTokenTie,
 
+  kTokenTR,
+  kTokenProgramChange,
 };
 
 

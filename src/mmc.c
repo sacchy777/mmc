@@ -32,7 +32,7 @@ char mmc_errorstring[MMC_MAX_ERROR_STRING];
 
 static void track_init(track_t *t){
   memset(t, 0, sizeof(track_t));
-  t->currenttime = 0;
+  t->currenttime = 1;
   t->params[kMmcParamOctave] = 5;
   t->params[kMmcParamVelocity] = 100;
   t->params[kMmcParamGate] = 80;
@@ -125,6 +125,14 @@ void mmc_add_note(mmc_t *m, int key, int sharp, double length, param_t *gate, pa
   if(proceed) t->currenttime += timenext;
 }
 
+//void smf0_add_programchange(smf0_t *s, int absolute_time, int channel, int program){
+
+void mmc_add_program_change(mmc_t *m, int program){
+  track_t *t = get_track(m);
+  smf0_t *s = m->smf0;
+  smf0_add_programchange(s, t->currenttime - 1, m->currenttrack, program);
+}
+
 /*
 void mmc_add_controlchange(mmc_t *m, int cc, int value){
   smf0_t *s = m->smf0;
@@ -192,16 +200,16 @@ int mmc_token_get_digit_param(mmc_t *m, param_t *param){
   if(mmc_token_match(m, kTokenDigit)){
     mmc_token_get_string(m, &p, &size);
     if(size > 255){
-      return 0;
+      return -1;
     }
     memset(buf, 0, sizeof(char)*256);
     memcpy(buf, p, size);
     param->valid = 1;
     param->value = atoi(buf);
     m->lex_index ++;
-    return 1;
-  }else{
     return 0;
+  }else{
+    return -1;
   }
 }
 
@@ -332,7 +340,7 @@ int mmc_parse_note(mmc_t *m){
   if(mmc_token_match(m, kTokenComma) != 0){
     if(m->debug){printf(" gate comma match\n");}
     m->lex_index ++;
-    if(mmc_token_get_digit_param(m, &gate)){
+    if(mmc_token_get_digit_param(m, &gate) == 0){
       m->lex_index ++;
     }
   }
@@ -340,7 +348,7 @@ int mmc_parse_note(mmc_t *m){
   if(mmc_token_match(m, kTokenComma)){
     if(m->debug){printf(" velocity comma match\n");}
     m->lex_index ++;
-    if(mmc_token_get_digit_param(m, &velocity)){
+    if(mmc_token_get_digit_param(m, &velocity) == 0){
       m->lex_index ++;
     }
   }
@@ -348,7 +356,7 @@ int mmc_parse_note(mmc_t *m){
   if(mmc_token_match(m, kTokenComma)){
     if(m->debug){printf(" timing comma match\n");}
     m->lex_index ++;
-    if(mmc_token_get_digit_param(m, &timing)){
+    if(mmc_token_get_digit_param(m, &timing) == 0){
       m->lex_index ++;
     }
   }
@@ -398,6 +406,48 @@ int mmc_parse_octave(mmc_t *m, int delta){
 }
 
 
+
+int mmc_parse_track(mmc_t *m){
+  if(m->debug){
+    printf("Parsing track change %d\n", m->current_token->type);
+  }
+  m->lex_index ++;
+
+  param_t param;
+  if(mmc_token_get_digit_param(m, &param) == 0){
+    if(param.sign != 0 || param.value < 1 || param.value > 16){
+      printf("error!\n");
+      return -1;
+    }
+    m->currenttrack = param.value - 1;
+    return 0;
+  }else{
+    return -1;
+  }
+
+}
+
+int mmc_parse_program_change(mmc_t *m){
+  if(m->debug){
+    printf("Parsing track change %d\n", m->current_token->type);
+  }
+  m->lex_index ++;
+
+  param_t param;
+  if(mmc_token_get_digit_param(m, &param) == 0){
+    if(param.sign != 0 || param.value < 1 || param.value > 128){
+      printf("error!\n");
+      return -1;
+    }
+    mmc_add_program_change(m, param.value - 1);
+    return 0;
+  }else{
+    return -1;
+  }
+
+}
+
+
 void mmc_parse(mmc_t *m){
   while((m->current_token = lex_get_token(m->lex, &m->lex_index, 0) )!= NULL){
     switch(m->current_token->type){
@@ -426,6 +476,14 @@ void mmc_parse(mmc_t *m){
 
     case kTokenOctaveDown:
       mmc_parse_octave(m, -1);
+      break;
+
+    case kTokenTR:
+      mmc_parse_track(m);
+      break;
+
+    case kTokenProgramChange:
+      mmc_parse_program_change(m);
       break;
 
     default:
@@ -464,7 +522,7 @@ int main(int argc, char *argv[]){
   mmc_t *m = mmc_create();
   m->lex->debug = 1;
   m->debug = 1;
-  mmc_parse_mml_string(m, "cdefgab>c", "c.mid");
+  mmc_parse_mml_string(m, "TR1@1<<c1TR2@85cdefgab>c", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
 
   mmc_destroy(m);

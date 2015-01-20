@@ -25,12 +25,12 @@ void test2(smf0_t *s){
   smf0_add_note(s, 0, ch, smf0_get_key(5, SMF0_KEY_D, 0), 0.10, 100);
   smf0_add_note(s, 480, ch, smf0_get_key(5, SMF0_KEY_F, 1), 0.10, 100);
   smf0_add_note(s, 960, ch, smf0_get_key(5, SMF0_KEY_A, 0), 0.10, 100);
-  smf0_add_note(s, 1440, ch, smf0_get_key(6, SMF0_KEY_D, 0), 0.10, 100);
+  smf0_add_note(s, 1440, ch, smf0_get_key(6, SMF0_KEY_C, 1), 0.10, 100);
 
   smf0_add_note(s, 1920, ch, smf0_get_key(5, SMF0_KEY_D, 0), 1.0, 100);
   smf0_add_note(s, 1920, ch, smf0_get_key(5, SMF0_KEY_F, 1), 1.0, 100);
   smf0_add_note(s, 1920, ch, smf0_get_key(5, SMF0_KEY_A, 0), 1.0, 100);
-  smf0_add_note(s, 1920, ch, smf0_get_key(6, SMF0_KEY_D, 0), 1.0, 100);
+  smf0_add_note(s, 1920, ch, smf0_get_key(6, SMF0_KEY_C, 1), 1.0, 100);
   smf0_save(s, "a.mid");
 }
 

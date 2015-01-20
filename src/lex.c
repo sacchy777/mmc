@@ -65,6 +65,10 @@ static const token_type_t keywords[] = {
   {kTokenPlus, "+"},
   {kTokenMinus, "-"},
   {kTokenTie, "^"},
+
+  {kTokenTR, "TR"},
+  {kTokenProgramChange, "@"},
+
 };
 
 
