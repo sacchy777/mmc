@@ -26,7 +26,13 @@ freely, subject to the following restrictions:
 #include <stdlib.h>
 #include <string.h>
 #include "lex.h"
+#include "dlog.h"
+#include "lex_error.h"
 
+
+/***************************************************************
+ * 
+ ****************************************************************/
 const int kNumTokensDefault = 10;
 
 enum {
@@ -41,6 +47,8 @@ enum {
   kStateComment1,
   kStateComment2,
   kStateLiteral,
+  kStateRhythmMacroDefine,
+  kStateRhythmMacroMode,
 };
 
 typedef struct {
@@ -48,7 +56,14 @@ typedef struct {
   char *keyword;
 } token_type_t;
 
+/***************************************************************
+ * 
+ ****************************************************************/
 static const token_type_t keywords[] = {
+
+  {kTokenTrackName, "TrackName"},
+  {kTokenCopyright, "Copyright"},
+
   {kTokenNoteA, "a"},
   {kTokenNoteB, "b"},
   {kTokenNoteC, "c"},
@@ -56,6 +71,9 @@ static const token_type_t keywords[] = {
   {kTokenNoteE, "e"},
   {kTokenNoteF, "f"},
   {kTokenNoteG, "g"},
+
+  {kTokenNoteNumber, "n"},
+
   {kTokenRest, "r"},
   {kTokenNatural, "*"},
   {kTokenDot, "."},
@@ -66,36 +84,47 @@ static const token_type_t keywords[] = {
   {kTokenMinus, "-"},
   {kTokenTie, "^"},
 
+  {kTokenTempo, "Tempo"},
   {kTokenTR, "TR"},
   {kTokenProgramChange, "@"},
 
+  {kTokenVelocity, "v"},
+  {kTokenGate, "q"},
+  {kTokenOctave, "o"},
+  {kTokenLength, "l"},
+
+  {kTokenQuestion, "?"},
+
+  {kTokenCC, "y"},
+
+  {kTokenBracketStart, "["},
+  {kTokenBracketEnd, "]"},
+  {kTokenColon, ":"},
 };
 
-
-/*
-static const char macro_single_define_start = "$";
-static const char macro_normal_define_start = "#";
-static const char macro_start = "{";
-static const char macro_end = "}";
-*/
-#define LEX_MAX_ERROR_STRING 256
-char lex_errorstring[LEX_MAX_ERROR_STRING];
-
+/***************************************************************
+ * 
+ ****************************************************************/
 static token_t *token_create(int num){
   token_t *t;
   t = calloc(num, sizeof(token_t));
   if(!t){
-    sprintf(lex_errorstring, "[LEX] Out of Memory at %s", __func__);
+    dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s", __func__);
     return NULL;
   }
   return t;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 static token_t *token_copy_create(token_t *old_tokens, int old_num, int new_num){
   int copy_num;
   token_t *new_tokens = token_create(new_num);
   if(!new_tokens){
-    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
+    dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
     return NULL;
   }
   copy_num = new_num > old_num ? old_num : new_num;
@@ -104,15 +133,16 @@ static token_t *token_copy_create(token_t *old_tokens, int old_num, int new_num)
   return new_tokens;
 }
 
-static void token_dump(token_t *t){
-  printf("pos %d, len %d, type %d\n", t->pos, t->len, t->type);
-}
 
+/***************************************************************
+ * 
+ ****************************************************************/
 lex_t *lex_create(){
   lex_t *lex;
   lex = calloc(1, sizeof(lex_t));
   if (!lex) {
-    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
+    dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
     return NULL;
     //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
   }
@@ -122,6 +152,9 @@ lex_t *lex_create(){
   return lex;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 void lex_destroy(lex_t *lex){
   if(!lex) return;
   if(lex->body){
@@ -134,11 +167,15 @@ void lex_destroy(lex_t *lex){
   return;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 int lex_open(lex_t *lex, const char *filename){
   FILE *fp;
   fp = fopen(filename, "rb");
   if(!fp){
-    sprintf(lex_errorstring, "[LEX] File %s not open at %s\n", filename, __func__);
+    dlog_add(LEX_MSG_ERROR_FILENOTFOUND, filename);
+    //    sprintf(lex_errorstring, "[LEX] File %s not open at %s\n", filename, __func__);
     //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
     return -1;
   }
@@ -147,7 +184,8 @@ int lex_open(lex_t *lex, const char *filename){
   fseek(fp, 0, SEEK_SET);
   lex->body = calloc(lex->size, sizeof(char) + 1); /* for 0 insert at last char */
   if(!lex->body) {
-    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
+    dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
     //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
     return -1;
   }
@@ -155,18 +193,25 @@ int lex_open(lex_t *lex, const char *filename){
   return 0;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 int lex_open_string(lex_t *lex, const char *mml){
   lex->size = strlen(mml);
   lex->body = calloc(lex->size, sizeof(char) + 1); /* for 0 insert at last char */
   if(!lex->body){
-    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
+    dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
     return -1;
   }
   memcpy(lex->body, mml, lex->size);
   return 0;
 }
 
-int lex_add_token(lex_t *lex, int pos, int len, int type, int line, int column){
+/***************************************************************
+ * 
+ ****************************************************************/
+static int lex_add_token(lex_t *lex, int pos, int len, int type, int line, int column, int ext_param){
   token_t *t;
   token_t *new_tokens;
   int new_num_tokens;
@@ -175,7 +220,8 @@ int lex_add_token(lex_t *lex, int pos, int len, int type, int line, int column){
     new_tokens = token_copy_create(lex->tokens, lex->num_tokens, new_num_tokens);
     free(lex->tokens);
     if(!new_tokens){
-      sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
+      dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
+    //      sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
       return -1;
     }
     lex->tokens = new_tokens;
@@ -185,11 +231,17 @@ int lex_add_token(lex_t *lex, int pos, int len, int type, int line, int column){
   t->pos = pos;
   t->len = len;
   t->valid = 1;
+  t->line = line;
+  t->column = column;
   t->type = type;
+  t->ext_param = ext_param;
   return 0;
 }
 
-int lex_is_digit(lex_t *lex){
+/***************************************************************
+ * 
+ ****************************************************************/
+static int lex_is_digit(lex_t *lex){
   char *p = lex->pos;
   int len = 0;
   while(*p != 0){
@@ -203,6 +255,23 @@ int lex_is_digit(lex_t *lex){
   return len;
 }
 
+static int lex_get_digit(lex_t *lex){
+  char *p = lex->pos;
+  int value = 0;
+  while(*p != 0){
+    if(*p >= '0' && *p <= '9'){
+      value = value * 10 + *p-'0';
+      p ++;
+    }else{
+      break;
+    }
+  }
+  return value;
+}
+
+/***************************************************************
+ * 
+ ****************************************************************/
 static const char *normal_delims = " \r\n\t|";
 static const char *comment1_start = "/*";
 static const char *comment1_end = "*/";
@@ -211,7 +280,14 @@ static const char *comment2_end = "\n";
 static const char *literal_start = "{\"";
 static const char *literal_end = "\"}";
 
-int lex_parse_normal(lex_t *lex){
+
+static const char *rhythm_mode_start = "#rhythm";
+static const char *rhythm_mode_end = "#end";
+
+/***************************************************************
+ * 
+ ****************************************************************/
+static int lex_parse_normal(lex_t *lex){
   int i;
   int len;
   int matched = 0;
@@ -223,6 +299,37 @@ int lex_parse_normal(lex_t *lex){
     kStateComment1, kStateComment2, kStateLiteral,
   };
 
+  /* */
+  len = strlen(rhythm_mode_start);
+  if(strncmp(rhythm_mode_start, lex->pos, len) == 0){
+    if(lex->rhythm_mode == 0){
+      if(lex->debug){printf("*entering rhythm mode\n");}
+      lex->pos += len;
+      lex->column += len;
+      lex->rhythm_mode = 1;
+      return 0;
+    }else{
+      // error!
+      return -1;
+    }
+  }
+
+  len = strlen(rhythm_mode_end);
+  if(strncmp(rhythm_mode_end, lex->pos, len) == 0){
+    if(lex->rhythm_mode == 1){
+      if(lex->debug){printf("*leaving rhythm mode\n");}
+      lex->pos += len;
+      lex->column += len;
+      lex->rhythm_mode = 0;
+      return 0;
+    }else{
+      // error!
+      return -1;
+    }
+  }
+
+
+  /* state changes */
   for(i = 0; i < sizeof(pair_list_string)/sizeof(char *); i ++){
     const char *start_string = pair_list_string[i];
     const int next_state = pair_list_status[i];
@@ -231,10 +338,59 @@ int lex_parse_normal(lex_t *lex){
       lex->pos += len;
       lex->column += len;
       lex->state = next_state;
-      if(lex->debug) printf("state changed to by %s\n", start_string);
-      return;
+      if(lex->debug){printf("state changed to by %s\n", start_string);}
+      return 0;
     }
   }
+
+  /* rhythm macro definition */
+  if(*lex->pos == '$'){
+    if(lex->debug) printf("macro define\n");
+    lex->pos ++;
+    lex->column ++;
+    if((*lex->pos >= 'A' && *lex->pos <= 'Z') || (*lex->pos >= 'a' && *lex->pos <= 'z')){
+      int index = *lex->pos - 'A';
+      if(index > 25){ index = *lex->pos - 'a' + 26;}
+      int len;
+      lex->pos ++;
+      lex->column ++;
+      if((len = lex_is_digit(lex)) != 0){
+	lex->macro[index] = lex_get_digit(lex);
+	lex->pos += len;
+	lex->column += len;
+	if(lex->debug) printf("macro added %d:%d\n", index, lex->macro[index]);
+	return 0;
+      }else{
+	if(lex->debug) printf("no avail digit %c\n", *lex->pos);
+	// error!
+	return -1;
+      }
+    }else{
+      if(lex->debug) printf("no avail string %c\n", *lex->pos);
+      // error!
+      return -1;
+    }
+  }
+
+  if(lex->rhythm_mode){
+    if((*lex->pos >= 'A' && *lex->pos <= 'Z') || (*lex->pos >= 'a' && *lex->pos <= 'z')){
+      int index = *lex->pos - 'A';
+      if(index > 25){ index = *lex->pos - 'a' + 26;}
+      int note_number = lex->macro[index];
+      if(note_number != 0){
+	if(lex_add_token(lex, lex->pos - lex->body, 1, kTokenNoteNumberMacro, lex->line, lex->column, note_number) != 0){
+	  return -1; // out of memory
+	}
+	lex->pos ++;
+	lex->column ++;
+	return 0;
+      }else{
+	// do nothing, go next
+      }
+    }
+  }
+
+
 
   /* parse white spcae and others that can be ignored */
   if(strchr(normal_delims, *(lex->pos)) != NULL){
@@ -253,7 +409,7 @@ int lex_parse_normal(lex_t *lex){
   /* parse digit */
   len = lex_is_digit(lex);
   if(len > 0){
-    if(lex_add_token(lex, lex->pos - lex->body, len, kTokenDigit, lex->line, lex->column) != 0){
+    if(lex_add_token(lex, lex->pos - lex->body, len, kTokenDigit, lex->line, lex->column, 0) != 0){
       return -1;
     }
     lex->pos += len;
@@ -268,7 +424,7 @@ int lex_parse_normal(lex_t *lex){
     len = strlen(keyword);
     if(strncmp(keyword, lex->pos, len) == 0){
       if(lex->debug) printf("  matched %s\n", keyword);
-      if(lex_add_token(lex, lex->pos - lex->body, len, keywords[i].type, lex->line, lex->column) != 0){
+      if(lex_add_token(lex, lex->pos - lex->body, len, keywords[i].type, lex->line, lex->column, 0) != 0){
 	return -1;
       }
       lex->pos += len;
@@ -279,12 +435,14 @@ int lex_parse_normal(lex_t *lex){
   }
 
   if(!matched){
-    sprintf(lex_errorstring, "[LEX] Line %d(%d) : Undefined keyword %c\n", lex->line, lex->column, *lex->pos);
+    //    sprintf(lex_errorstring, "[LEX] Line %d(%d) : Undefined keyword %c\n", lex->line, lex->column, *lex->pos);
+    dlog_add(LEX_MSG_ERROR_UNSUPPORTED_TOKEN, lex->line + 1, lex->column + 1, *lex->pos);
     lex->error = 1;
-    if(lex->debug) puts(lex_errorstring);
+    //    if(lex->debug) puts(lex_errorstring);
     if(!lex->error_skip) lex->done = 1;
     lex->pos ++;
     lex->column ++;
+    return -1;
   }
   return 0;
 }
@@ -292,7 +450,10 @@ int lex_parse_normal(lex_t *lex){
 /*
 Comment nesting is not supported or aleated.
 */
-int lex_parse_pair(lex_t *lex){
+/***************************************************************
+ * 
+ ****************************************************************/
+static int lex_parse_pair(lex_t *lex){
   int len;
   int literal_len;
   char *start = lex->pos;
@@ -328,7 +489,7 @@ int lex_parse_pair(lex_t *lex){
       if(lex->state == kStateLiteral){
 	literal_len = lex->pos - start - 2;
 	if(lex->debug) printf("  matched literal pos %d size %d\n", (int)(start - lex->body), literal_len);
-	if(lex_add_token(lex, start - lex->body, literal_len, kTokenLiteral, start_line, start_column) != 0){
+	if(lex_add_token(lex, start - lex->body, literal_len, kTokenLiteral, start_line, start_column, 0) != 0){
 	  return -1;
 	}
       }
@@ -346,15 +507,20 @@ int lex_parse_pair(lex_t *lex){
 
     if(lex->pos >= lex->body + lex->size){
       lex->error = 1;
-      sprintf(lex_errorstring, "[LEX] Line %d(%d) : comment unterminated\n", lex->line, lex->column);
-      if(lex->debug) puts(lex_errorstring);
+      dlog_add(LEX_MSG_ERROR_COMMENT_UNTERMINATED, lex->line + 1, lex->column + 1);
+      //      sprintf(lex_errorstring, "[LEX] Line %d(%d) : comment unterminated\n", lex->line, lex->column);
+      //      if(lex->debug) puts(lex_errorstring);
       if(!lex->error_skip) lex->done = 1;
-      break;
+      return -1;
+      //      break;
     }
   }
   return 0;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 void lex_dump_tokens(lex_t *lex){
   int i;
   token_t *t;
@@ -366,6 +532,9 @@ void lex_dump_tokens(lex_t *lex){
   }
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 int lex_parse(lex_t *lex){
   int ret = 0;
   lex->done = 0;
@@ -384,6 +553,9 @@ int lex_parse(lex_t *lex){
   return 0;
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
 token_t *lex_get_token(lex_t *lex, int *iter, int peep){
   token_t *t = NULL;
   int index = 0;
@@ -399,12 +571,6 @@ token_t *lex_get_token(lex_t *lex, int *iter, int peep){
   return t;
 }
 
-token_t *lex_peep_token(lex_t *lex, int *iter){
-}
-
-char *lex_get_error(){
-  return lex_errorstring;
-}
 
 /*
 int main(){

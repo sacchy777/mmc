@@ -31,97 +31,57 @@ freely, subject to the following restrictions:
 #include "smf0.h"
 #include "lex.h"
 
-
-enum {
-  kMmcParamNone = 0,
-  kMmcParamVelocity,
-  kMmcParamGate,
-  kMmcParamTiming,
-  kMmcParamOctave,
-  kMmcParamMax,
-};
-
+/*
+ * a digit parameters
+ */
 typedef struct {
   int valid;
   int value;
   int sign;
 } param_t;
 
+/*
+ * track information structure
+ */
 typedef struct {
   int currenttime;
-  int params[kMmcParamMax];
-  int length;
+  int octave;
+  int gate;
+  float length;
+  int velocity;
 } track_t;
 
-typedef struct {
-  int length;
-  param_t param;
-} mmc_note_params_t;
 
 typedef struct {
-  int value;
-  int value_default;
-  int value_plusminus;
-} mmc_param_t;
-
-typedef struct {
-  int key;
-  int sharp;
-  int natural;
-  int length_default;
-  float length;
-  mmc_param_t gate;
-  mmc_param_t velocity;
-  mmc_param_t timing;
-} mmc_note_t;
+  int position;
+  int repeat;
+  int current_repeat;
+} mmc_bracket_t;
 
 #define MMC_NOTE_MAX 16
+#define MMC_BRACKET_NEST_MAX 16
 
 typedef struct {
   smf0_t *smf0;
   lex_t *lex;
   int lex_index;
-  token_t *current_token;
+  token_t *current_token; // just for reference
   track_t tracks[TRACK_NUM];
-  mmc_note_t notes[MMC_NOTE_MAX];
-  mmc_note_t current_note;
   int currenttrack;
   int error;
   int debug;
+  int simultones[128];
+  int bracket_stack_index;
+  mmc_bracket_t bracket_state[MMC_BRACKET_NEST_MAX];
+  int bracket_skipping;
+  int bracket_nest_level_during_skipping;
 } mmc_t;
-
-
-
-#define MMC_NOTE_MASK_OCTAVE 0x1
-#define MMC_NOTE_MASK_KEY 0x2
-#define MMC_NOTE_MASK_SHARP 0x4
-#define MMC_NOTE_MASK_LENGTH 0x8
-#define MMC_NOTE_MASK_GATE 0x10
-#define MMC_NOTE_MASK_VELOCITY 0x20
-#define MMC_NOTE_MASK_TIMING 0x40
 
 mmc_t *mmc_create();
 void mmc_destroy(mmc_t *m);
 void mmc_save(mmc_t *m, const char *filename);
-
-void mmc_add_note(mmc_t *m, int key, int sharp, double length, param_t *gate, param_t *velocity, param_t *timing, int proceed);
-
-void mmc_add_controlchange(mmc_t *m, int cc, int value);
-void mmc_add_programchange(mmc_t *m, int program);
-
-
-
-void mmc_set_track(mmc_t *m, int track);
-void mmc_set_octave(mmc_t *m, int octave);
-void mmc_set_gate(mmc_t *m, int gate);
-void mmc_set_veloticy(mmc_t *m, int velocity);
-
-
-
-
-
-
-
+int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename);
+int mmc_parse_mml_file(mmc_t *m, const char *mml_filename, const char *mid_filename);
 
 #endif
 

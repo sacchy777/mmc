@@ -26,7 +26,7 @@ namespace Mmcg
         [DllImport("mmc.dll", CallingConvention = CallingConvention.Cdecl)]
         unsafe static extern void mmc_version([Out] StringBuilder version);
 
-        const string Version = "mmcg 0.0(alpha)";
+        const string Version = "MusicMemoPad 0.0.0(alpha)";
         bool textChanged = false;
         bool onceOpenedOrSaved = false;
         string currentFilename = "";
@@ -48,13 +48,25 @@ namespace Mmcg
         }
 
         private Form2 form2;
+        private HelpForm helpForm;
+
 
         private void updateComboBox(){
             toolStripComboBox1.Items.Clear();
-            toolStripComboBox1.Items.Add("1:" + form2.getPlayer(1));
-            toolStripComboBox1.Items.Add("2:" + form2.getPlayer(2));
-            toolStripComboBox1.Items.Add("3:" + form2.getPlayer(3));
-            toolStripComboBox1.Items.Add("4:" + form2.getPlayer(4));
+            toolStripComboBox1.Items.Add("[1]" + form2.getPlayer(1));
+            toolStripComboBox1.Items.Add("[2]" + form2.getPlayer(2));
+            toolStripComboBox1.Items.Add("[3]" + form2.getPlayer(3));
+            toolStripComboBox1.Items.Add("[4]" + form2.getPlayer(4));
+        }
+
+        private void updateStatusBar()
+        {            
+            int index = textBox1.SelectionStart;
+            int line = textBox1.GetLineFromCharIndex(index);
+            Point point = textBox1.GetPositionFromCharIndex(index);
+            point.X = 0;
+            int column = index - textBox1.GetCharIndexFromPosition(point);
+            toolStripStatusLabel1.Text = "("+(line+1)+","+(column+1)+")";
         }
 
         public Form1()
@@ -69,8 +81,10 @@ namespace Mmcg
             */
             form2 = new Form2();
             form2.Owner = this;
+
             updateComboBox();
             toolStripComboBox1.SelectedIndex = 0;
+            updateStatusBar();
         }
 
         private void play_music()
@@ -78,27 +92,16 @@ namespace Mmcg
             int result;
             StringBuilder buf = new StringBuilder(256);
             result = mmc_convert_string(textBox1.Text, "temp.mid", buf);
-            //            int result = mmc_convert("a.mml", "temp.mid", buf);
-
-            /*
-  string program_name = "\"c:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"";
-  string option = "/play";
-   */
-            //string program_name = "\"c:\\Program Files (x86)\\YAMAHA\\MidRadio Player\\MidRadio.exe\"";
-            // string option = "";
-
-            //            string option = "--no-repeat";
-            //          string program_name = "ctplay.exe";
+            textBox2.Text = buf.ToString();
+            if (result != 0) return;
 
             int selected = toolStripComboBox1.SelectedIndex;
             string option = form2.getArguments(selected + 1);
             string program_name = form2.getPlayer(selected + 1);
-
-            //MessageBox.Show(program_name + option, "test");
-
-
             string filename = "temp.mid";
-            string fullpath_filename = Path.GetFullPath(filename);
+            string fullpath_filename = "\"" + Path.GetFullPath(filename) + "\"";
+
+
             try
             {
                 if (playing) player.Kill();
@@ -107,20 +110,22 @@ namespace Mmcg
             {
                 ;
             }
-            /*
-            player = System.Diagnostics.Process.Start(program_name, option + " " + filename);
-            */
             player = new System.Diagnostics.Process();
             player.StartInfo.CreateNoWindow = true;
             player.StartInfo.UseShellExecute = true;
             player.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            player.StartInfo.FileName = program_name;
-            //            player.StartInfo.Arguments = option + " " + filename;
-                        player.StartInfo.Arguments = option + " " + fullpath_filename;
-            player.Start();
+            player.StartInfo.FileName = "\"" + program_name + "\"";
+            player.StartInfo.Arguments = option + " " + fullpath_filename;
+            try {
+                player.Start();
+            }
+            catch (Exception)
+            {
+                textBox2.Text += "Failed starting player.\r\n";
+            }
+
 
             playing = true;
-
         }
 
 
@@ -145,11 +150,7 @@ namespace Mmcg
 
         }
 
-        private void richTextBox1_TextChanged(object sender, EventArgs e)
-        {
-            textChanged = true;
 
-        }
 
         private void stopButton_Click(object sender, EventArgs e)
         {
@@ -198,6 +199,7 @@ namespace Mmcg
                     textBox1.Text = sr.ReadToEnd();
                     onceOpenedOrSaved = true;
                     textChanged = false;
+                    this.Text = Version + " " + currentFilename;
                 }
             }
         }
@@ -214,6 +216,7 @@ namespace Mmcg
                 textChanged = false;
                 onceOpenedOrSaved = true;
                 currentFilename = saveFileDialog1.FileName;
+                this.Text = Version + " " + currentFilename;
             }
             else
             {
@@ -237,6 +240,7 @@ namespace Mmcg
                 textChanged = false;
                 onceOpenedOrSaved = true;
                 currentFilename = saveFileDialog1.FileName;
+                this.Text = Version + " " + currentFilename;
             }
         }
 
@@ -244,6 +248,7 @@ namespace Mmcg
         {
             if (confirmDiscardOkay() == false) return;
             textBox1.Text = "";
+            currentFilename = "";
         }
 
         private void closeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -314,6 +319,44 @@ namespace Mmcg
         private void saveButton_Click(object sender, EventArgs e)
         {
             saveToolStripMenuItem_Click(sender, e);
+        }
+
+        private void textBox1_CursorChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void findToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+            this.Text = Version + " " + currentFilename + "*";
+            textChanged = true;
+        }
+
+        private void helpToolStripMenuItem3_Click(object sender, EventArgs e)
+        {
+            helpForm = new HelpForm();
+            helpForm.Owner = this;
+            helpForm.ShowDialog();
+        }
+
+        private void textBox1_MouseClick(object sender, MouseEventArgs e)
+        {
+            updateStatusBar();
+        }
+
+        private void textBox1_KeyDown(object sender, KeyEventArgs e)
+        {
+            
+        }
+
+        private void textBox1_KeyUp(object sender, KeyEventArgs e)
+        {
+            updateStatusBar();
         }
 
     }

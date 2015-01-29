@@ -22,25 +22,9 @@ freely, subject to the following restrictions:
    3. This notice may not be removed or altered from any source
    distribution.
 */
+
 #ifndef MMC_LEX_H_
 #define MMC_LEX_H_
-
-enum {
-  LEX_TOKEN_TYPE_NONE = 0,
-  LEX_TOKEN_TYPE_BAR,
-  LEX_TOKEN_TYPE_COMMA,
-  LEX_TOKEN_TYPE_BRACE_START,
-  LEX_TOKEN_TYPE_BRACE_END,
-  LEX_TOKEN_TYPE_SIGN,
-  LEX_TOKEN_TYPE_DIGIT,
-  LEX_TOKEN_TYPE_NOTE,
-  LEX_TOKEN_TYPE_REST,
-  LEX_TOKEN_TYPE_LITERAL,
-  LEX_TOKEN_TYPE_MACRO_SINGLE,
-  LEX_TOKEN_TYPE_MACRO_NORMAL,
-  LEX_TOKEN_TYPE_KEYWORD_TRACK,
-
-};
 
 enum {
   kTokenNone = 0,
@@ -54,6 +38,9 @@ enum {
   kTokenNoteE,
   kTokenNoteF,
   kTokenNoteG,
+  kTokenNoteNumber,
+  kTokenNoteNumberMacro,
+
   kTokenRest,
   kTokenNatural,
   kTokenDot,
@@ -66,9 +53,29 @@ enum {
 
   kTokenTR,
   kTokenProgramChange,
+  
+  kTokenOctave,
+  kTokenVelocity,
+  kTokenGate,
+  kTokenLength,
+
+  kTokenTempo,
+  kTokenQuestion,
+
+  kTokenRhythmMacroDefine,
+  kTokenRhythmMacroReference,
+
+  kTokenCC,
+
+  kTokenTrackName,
+  kTokenCopyright,
+
+  kTokenBracketStart,
+  kTokenBracketEnd,
+  kTokenColon,
+
+
 };
-
-
 
 typedef struct {
   int valid;
@@ -77,6 +84,7 @@ typedef struct {
   int len;
   int line;
   int column;
+  int ext_param;
 } token_t;
 
 typedef struct {
@@ -94,8 +102,8 @@ typedef struct {
   int num_tokens;
   int token_pos;
   token_t *tokens;
-  token_t *macro_normal;
-  token_t *macro_single;
+  int macro[26*2];
+  int rhythm_mode;
 } lex_t;
 
 
@@ -106,5 +114,6 @@ int lex_open_string(lex_t *lex, const char *mml);
 
 token_t *lex_get_token(lex_t *lex, int *iter, int peep);
 int lex_parse(lex_t *lex);
+void lex_dump_tokens(lex_t *lex);
 
 #endif // MMC_LEX_H_

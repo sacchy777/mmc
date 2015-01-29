@@ -48,5 +48,46 @@ namespace Mmcg
         {
 
         }
+
+        private void folderBrowserDialog1_HelpRequest(object sender, EventArgs e)
+        {
+
+        }
+
+        private void openfiledialog_setting()
+        {
+            openFileDialog1.Title = "Open";
+            openFileDialog1.FileName = "*.exe";
+            openFileDialog1.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            openFileDialog1.Filter = "EXE file|*.exe|All files(*.*)|*.*";
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            openfiledialog_setting();
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                textBox3.Text = openFileDialog1.FileName;
+            }
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            openfiledialog_setting();
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                textBox5.Text = openFileDialog1.FileName;
+            }
+        }
+
+        private void button4_Click_1(object sender, EventArgs e)
+        {
+            openfiledialog_setting();
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                textBox7.Text = openFileDialog1.FileName;
+            }
+
+        }
     }
 }

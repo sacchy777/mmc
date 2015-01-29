@@ -23,7 +23,8 @@ freely, subject to the following restrictions:
    distribution.
 */
 #include "mmc.h"
-
+#include "dlog.h"
+#include <string.h>
 /*---------------------------------------------------
  *---------------------------------------------------*/
 __declspec(dllexport) void __cdecl mmc_version(char *version){
@@ -33,20 +34,32 @@ __declspec(dllexport) void __cdecl mmc_version(char *version){
 /*---------------------------------------------------
  *---------------------------------------------------*/
 __declspec(dllexport) int __cdecl mmc_convert(char *infilename, char *outfilename, char *console){
+  dlog_clear();
   mmc_t *m = mmc_create();
-  mmc_parse_mml_file(m, infilename, outfilename);
-  //  strcpy(console, m->error_msg);
+  int result = mmc_parse_mml_file(m, infilename, outfilename);
+  if(result == 0){
+    dlog_add("Done successfully.");
+  }else{
+    dlog_add("Midi convert failed.");
+  }
+  strcpy(console, dlog_get());
   mmc_destroy(m);
-  return 0;
+  return result;
 }
 
 /*---------------------------------------------------
  *---------------------------------------------------*/
 __declspec(dllexport) int __cdecl mmc_convert_string(char *mml, char *outfilename, char *console){
+  dlog_clear();
   mmc_t *m = mmc_create();
-  mmc_parse_mml_string(m, mml, outfilename);
-  //  strcpy(console, m->error_msg);
+  int result = mmc_parse_mml_string(m, mml, outfilename);
+  if(m->error == 0){
+    dlog_add("Convert done successfully.");
+  }else{
+    dlog_add("Convert failed.");
+  }
+  strcpy(console, dlog_get());
   mmc_destroy(m);
-  return 0;
+  return result;
 }
 

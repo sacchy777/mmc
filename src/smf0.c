@@ -53,6 +53,8 @@ void smf0_add_event_raw(smf0_t *s, int absolute_time, int type, int channel, int
   e->datasize = num_data + 1;
 }
 
+
+
 void smf0_add_noteoff(smf0_t *s, int absolute_time, int channel, int key, int velocity){
   unsigned char data[2];
   data[0] = key;
@@ -104,6 +106,49 @@ void smf0_add_note_ex(smf0_t *s, int absolute_time, int channel, int octave, int
   smf0_add_noteon(s, absolute_time, channel, octave * 12 + key + sharp, velocity);  
   smf0_add_noteoff(s, absolute_time + 4 * s->timebase * length, channel, octave * 12 + key + sharp, velocity);  
 }
+
+void smf0_add_tempo(smf0_t *s, int absolute_time, int tempo){
+  unsigned char data[5];
+  int usec = 60 * 1000000 / tempo;
+  data[0] = 0x51;
+  data[1] = 0x03;
+  data[2] = (usec & 0xff0000 ) >> 16;
+  data[3] = (usec & 0xff00 ) >> 8;
+  data[4] = usec & 0xff;
+
+  smf0_add_event_raw(s, absolute_time, 0xFF, 0, 5, data); 
+}
+
+
+
+void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_string, int meta_len){
+
+  midievent_t *e = &s->events[s->index ++];
+  e->absolute_time = absolute_time;
+  e->data[0] = 0xff;
+  e->data[1] = meta_type;
+  e->data[2] = meta_len > 127 ? 127 : meta_len;
+  e->datasize = 3;
+  e->extended_type = SMF0_EXT_META_LONG;
+  e->long_msg_len = meta_len;
+  e->long_msg = meta_string;
+}
+
+
+void smf0_add_question(smf0_t *s, int absolute_time){
+
+  if(s->question == 1){
+    // dup! warning
+  }
+  midievent_t *e = &s->events[s->index ++];
+  e->absolute_time = absolute_time;
+  e->datasize = 0;
+  e->extended_type = SMF0_EXT_QUESTION;
+  s->question = 1;
+}
+
+
+
 
 int smf0_get_key(int octave, int key, int sharp){
   return octave * 12 + key + sharp;
@@ -194,19 +239,41 @@ static void smf0_write_event(smf0_t *s, FILE *fp){
   int currenttime = 0;
   unsigned char deltatime_char[4];
   int deltatime_size;
+
   for(i = 0; i < MIDIEVENT_MAX; i ++){
     midievent_t *e = s->sort_events[i];
-	if(e->absolute_time == ABSOLUTE_TIME_MAX) return;
+    if(e->absolute_time == ABSOLUTE_TIME_MAX) return;
+
+    if(e->extended_type == SMF0_EXT_QUESTION){
+      s->question_detected = 1;
+      continue;
+    }
 
     deltatime = e->absolute_time - currenttime;
-	currenttime = e->absolute_time;
-    conv_deltatime(deltatime, deltatime_char, &deltatime_size);
-	fwrite(deltatime_char, 1, deltatime_size, fp);
-	s->tracksize += deltatime_size;
 
-    fwrite(e->data, 1, e->datasize, fp);
-	s->tracksize += e->datasize;
+    if(s->question == 1 && s->question_detected == 0) deltatime = 0;
+
+    currenttime = e->absolute_time;
+
+    conv_deltatime(deltatime, deltatime_char, &deltatime_size);
+
+    if((s->question == 1 && s->question_detected == 0) && 
+       (e->extended_type == SMF0_EXT_NONE && ((e->data[0] & 0xf0) == 0x90 || ((e->data[0] & 0xf0) == 0x80)))){
+      ; //do nothing
+    }else{
+      fwrite(deltatime_char, 1, deltatime_size, fp);
+      s->tracksize += deltatime_size;
+      fwrite(e->data, 1, e->datasize, fp);
+      s->tracksize += e->datasize;
+    }
+
+    if(e->extended_type == SMF0_EXT_META_LONG){
+      fwrite(e->long_msg, 1, e->long_msg_len, fp);
+      s->tracksize += e->long_msg_len;
+    }
+
   }
+
 }
 
 int smf0_save(smf0_t *s, const char *filename){

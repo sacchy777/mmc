@@ -58,12 +58,21 @@ enum {
   SMF0_CC_ALLNOTEOFF = 123,
 };
 
+enum {
+  SMF0_EXT_NONE = 0,
+  SMF0_EXT_META_LONG,
+  SMF0_EXT_QUESTION,
+};
+
 
 
 typedef struct {
   int absolute_time;
   int datasize;
   unsigned char data[MIDIEVENT_SHORT_DATA_MAX];
+  int extended_type;
+  char *long_msg;
+  int long_msg_len;
 } midievent_t;
 
 typedef struct {
@@ -72,6 +81,9 @@ typedef struct {
   int tracksize;
   midievent_t events[MIDIEVENT_MAX];
   midievent_t *sort_events[MIDIEVENT_MAX];
+  int start_from_enable;
+  int question;
+  int question_detected;
 } smf0_t;
 
 smf0_t *smf0_create();
@@ -84,11 +96,13 @@ void smf0_add_controlchange(smf0_t *s, int absolute_time, int channel, int contr
 void smf0_add_programchange(smf0_t *s, int absolute_time, int channel, int program);
 void smf0_add_channelpressure(smf0_t *s, int absolute_time, int channel, int value);
 void smf0_add_pitchbend(smf0_t *s, int absolute_time, int channel, int low, int high);
+void smf0_add_tempo(smf0_t *s, int absolute_time, int tempo);
 void smf0_dump(smf0_t *s);
 int smf0_save(smf0_t *s, const char *filename);
-
 void smf0_add_note_ex(smf0_t *s, int absolute_time, int channel, int octave, int key, int sharp, float length, int velocity);
 int smf0_get_key(int octave, int key, int sharp);
 void smf0_add_note(smf0_t *s, int absolute_time, int channel, int key, float length, int velocity);
+void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_string, int meta_len);
+void smf0_add_question(smf0_t *s, int absolute_time);
 
 #endif
