@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
    distribution.
 */
 #include "smf0.h"
+#include "dlog.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,8 +43,18 @@ void smf0_destroy(smf0_t *s){
   free(s);
 }
 
+
 void smf0_add_event_raw(smf0_t *s, int absolute_time, int type, int channel, int num_data, unsigned char *data){
   int i;
+  static int error_detected = 0;
+  if(s->index == MIDIEVENT_MAX){
+    // error!
+    if(!error_detected){
+      dlog_add("Too many MIDI events");
+      error_detected = 1;
+    }
+    return;
+  }
   midievent_t *e = &s->events[s->index ++];
   e->absolute_time = absolute_time;
   e->data[0] = type | channel;
@@ -259,7 +270,7 @@ static void smf0_write_event(smf0_t *s, FILE *fp){
 
     if((s->question == 1 && s->question_detected == 0) && 
        (e->extended_type == SMF0_EXT_NONE && ((e->data[0] & 0xf0) == 0x90 || ((e->data[0] & 0xf0) == 0x80)))){
-      ; //do nothing
+      ; //do nothing. skip until question detected
     }else{
       fwrite(deltatime_char, 1, deltatime_size, fp);
       s->tracksize += deltatime_size;

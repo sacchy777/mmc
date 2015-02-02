@@ -17,6 +17,15 @@ namespace Mmcg
             InitializeComponent();
         }
 
+        public bool isShowPlayer()
+        {
+            return checkBox2.Checked;
+        }
+
+        public bool isShowWarning()
+        {
+            return checkBox1.Checked;
+        }
         public string getPlayer(int id)
         {
             switch(id){

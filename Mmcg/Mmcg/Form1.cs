@@ -39,10 +39,11 @@ namespace Mmcg
             try
             {
                 if (playing) player.Kill();
+                playing = false;
             }
             catch (Exception)
             {
-                ;
+                MessageBox.Show("Kill Fail", "Fail");
             }
 
         }
@@ -89,6 +90,9 @@ namespace Mmcg
 
         private void play_music()
         {
+
+            close_player();
+
             int result;
             StringBuilder buf = new StringBuilder(256);
             result = mmc_convert_string(textBox1.Text, "temp.mid", buf);
@@ -102,22 +106,18 @@ namespace Mmcg
             string fullpath_filename = "\"" + Path.GetFullPath(filename) + "\"";
 
 
-            try
-            {
-                if (playing) player.Kill();
-            }
-            catch (Exception)
-            {
-                ;
-            }
             player = new System.Diagnostics.Process();
-            player.StartInfo.CreateNoWindow = true;
-            player.StartInfo.UseShellExecute = true;
-            player.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            if (!form2.isShowPlayer())
+            {
+                player.StartInfo.CreateNoWindow = true;
+                player.StartInfo.UseShellExecute = true;
+                player.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            }
             player.StartInfo.FileName = "\"" + program_name + "\"";
             player.StartInfo.Arguments = option + " " + fullpath_filename;
             try {
                 player.Start();
+                playing = true;
             }
             catch (Exception)
             {
@@ -125,7 +125,6 @@ namespace Mmcg
             }
 
 
-            playing = true;
         }
 
 

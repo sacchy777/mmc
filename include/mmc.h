@@ -25,7 +25,7 @@ freely, subject to the following restrictions:
 #ifndef MMC_H
 #define MMC_H
 
-#define MMC_VERSION "0.0"
+#define MMC_VERSION "0.1.0"
 
 #define TRACK_NUM 16
 #include "smf0.h"
@@ -69,7 +69,9 @@ typedef struct {
   track_t tracks[TRACK_NUM];
   int currenttrack;
   int error;
+  int warning;
   int debug;
+  int hide_warning;
   int simultones[128];
   int bracket_stack_index;
   mmc_bracket_t bracket_state[MMC_BRACKET_NEST_MAX];
@@ -82,6 +84,7 @@ void mmc_destroy(mmc_t *m);
 void mmc_save(mmc_t *m, const char *filename);
 int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename);
 int mmc_parse_mml_file(mmc_t *m, const char *mml_filename, const char *mid_filename);
+void mmc_hide_warning(mmc_t *m);
 
 #endif
 

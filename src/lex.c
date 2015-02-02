@@ -108,9 +108,9 @@ static const token_type_t keywords[] = {
 static token_t *token_create(int num){
   token_t *t;
   t = calloc(num, sizeof(token_t));
-  if(!t){
+  if (!t) 
+  {
     dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s", __func__);
     return NULL;
   }
   return t;
@@ -122,14 +122,14 @@ static token_t *token_create(int num){
 static token_t *token_copy_create(token_t *old_tokens, int old_num, int new_num){
   int copy_num;
   token_t *new_tokens = token_create(new_num);
-  if(!new_tokens){
+  if (!new_tokens)
+  {
     dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
     return NULL;
   }
   copy_num = new_num > old_num ? old_num : new_num;
   memcpy(new_tokens, old_tokens, copy_num * sizeof(token_t));
-  printf("reallocation from %d to %d\n", old_num, new_num);
+ // printf("reallocation from %d to %d\n", old_num, new_num);
   return new_tokens;
 }
 
@@ -142,9 +142,7 @@ lex_t *lex_create(){
   lex = calloc(1, sizeof(lex_t));
   if (!lex) {
     dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //    sprintf(lex_errorstring, "[LEX] Out of Memory at %s\n", __func__);
     return NULL;
-    //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
   }
   lex->num_tokens = kNumTokensDefault;
   lex->tokens = token_create(lex->num_tokens);
@@ -175,8 +173,6 @@ int lex_open(lex_t *lex, const char *filename){
   fp = fopen(filename, "rb");
   if(!fp){
     dlog_add(LEX_MSG_ERROR_FILENOTFOUND, filename);
-    //    sprintf(lex_errorstring, "[LEX] File %s not open at %s\n", filename, __func__);
-    //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
     return -1;
   }
   fseek(fp, 0, SEEK_END);
@@ -185,8 +181,6 @@ int lex_open(lex_t *lex, const char *filename){
   lex->body = calloc(lex->size, sizeof(char) + 1); /* for 0 insert at last char */
   if(!lex->body) {
     dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
-    //    fprintf(stderr, "[ERROR]:%s %s:%d\n",__FILE__,__func__,__LINE__);
     return -1;
   }
   fread(lex->body, sizeof(char), lex->size, fp);
@@ -201,7 +195,6 @@ int lex_open_string(lex_t *lex, const char *mml){
   lex->body = calloc(lex->size, sizeof(char) + 1); /* for 0 insert at last char */
   if(!lex->body){
     dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //    sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
     return -1;
   }
   memcpy(lex->body, mml, lex->size);
@@ -221,7 +214,6 @@ static int lex_add_token(lex_t *lex, int pos, int len, int type, int line, int c
     free(lex->tokens);
     if(!new_tokens){
       dlog_add(LEX_MSG_ERROR_OUTOFMEMORY, __func__);
-    //      sprintf(lex_errorstring, "[LEX] Out of memory at %s\n",  __func__);
       return -1;
     }
     lex->tokens = new_tokens;
@@ -310,6 +302,7 @@ static int lex_parse_normal(lex_t *lex){
       return 0;
     }else{
       // error!
+      dlog_add(LEX_MSG_ERROR_UNEXPECTED_KEYWORD, lex->line + 1, lex->column + 1, rhythm_mode_start);
       return -1;
     }
   }
@@ -324,6 +317,7 @@ static int lex_parse_normal(lex_t *lex){
       return 0;
     }else{
       // error!
+      dlog_add(LEX_MSG_ERROR_UNEXPECTED_KEYWORD, lex->line + 1, lex->column + 1, rhythm_mode_end);
       return -1;
     }
   }
@@ -359,15 +353,17 @@ static int lex_parse_normal(lex_t *lex){
 	lex->pos += len;
 	lex->column += len;
 	if(lex->debug) printf("macro added %d:%d\n", index, lex->macro[index]);
-	return 0;
+	  return 0;
       }else{
 	if(lex->debug) printf("no avail digit %c\n", *lex->pos);
 	// error!
+      dlog_add(LEX_MSG_ERROR_RHYTHM_MACRO, lex->line + 1, lex->column + 1, "Note number missing");
 	return -1;
       }
     }else{
       if(lex->debug) printf("no avail string %c\n", *lex->pos);
       // error!
+      dlog_add(LEX_MSG_ERROR_RHYTHM_MACRO, lex->line + 1, lex->column + 1, "rhythm letter missing");
       return -1;
     }
   }

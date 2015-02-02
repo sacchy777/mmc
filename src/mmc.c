@@ -55,7 +55,6 @@ mmc_t *mmc_create(){
   mmc_t *m = calloc(sizeof(mmc_t), 1);
   if(!m){
     dlog_add(MMC_MSG_ERROR_OUTOFMEMORY, __func__);
-    sprintf(mmc_errorstring, "[MMC] Out of Memory at %s", __func__);
     return NULL;
   }
   for(i = 0; i < TRACK_NUM; i ++){
@@ -89,6 +88,13 @@ void mmc_destroy(mmc_t *m){
 /***************************************************************
  * 
  ****************************************************************/
+void mmc_hide_warning(mmc_t *m){
+  m->hide_warning = 1;
+}
+
+/***************************************************************
+ * 
+ ****************************************************************/
 static void mmc_clear_simultones(mmc_t *m){
   memset(m->simultones, 0, sizeof(int) * 128);
 }
@@ -113,6 +119,12 @@ static void mmc_add_note_number(mmc_t *m, int note, double length, param_t *gate
   int line = m->current_token->line;
   int column = m->current_token->column;
 
+  if(note < 0 || note > 127){
+    dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "note number", note);
+    m->error = 1;	
+	return;
+  }
+
   if(off_pending == 1){
     m->simultones[note] = 1;
   }
@@ -129,10 +141,12 @@ static void mmc_add_note_number(mmc_t *m, int note, double length, param_t *gate
 
   if(_gate < 0){
     dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "gate", _gate, 0);
+    m->warning = 1;
     _gate = 0;
   }
   if(_gate > 1000){
     dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "gate", _gate, 1000);
+    m->warning = 1;
     _gate = 1000;
   }
 
@@ -148,10 +162,12 @@ static void mmc_add_note_number(mmc_t *m, int note, double length, param_t *gate
 
   if(_velocity < 0){
     dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "velocity", _velocity, 0);
+    m->warning = 1;
     _velocity = 0;
   }
   if(_velocity > 127){
     dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "velocity", _velocity, 127);
+    m->warning = 1;
     _velocity = 127;
   }
 
@@ -246,7 +262,7 @@ static int mmc_token_get_digit_param(mmc_t *m, param_t *param){
   if(mmc_token_match(m, kTokenDigit)){
     mmc_token_get_string(m, &p, &size);
     if(size > 255){
-      return -1;
+      return 0;
     }
     memset(buf, 0, sizeof(char)*256);
     memcpy(buf, p, size);
@@ -290,7 +306,9 @@ static int mmc_parse_sharp(mmc_t *m, int *value){
  * 
  ****************************************************************/
 static int mmc_parse_length_internal(mmc_t *m, double *length){
-
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+ 
   int size;
   int digit;
   char *p;
@@ -299,7 +317,9 @@ static int mmc_parse_length_internal(mmc_t *m, double *length){
   if(m->debug){printf("  parsing length\n");}
   if(mmc_token_match(m, kTokenDigit)){
     mmc_token_get_string(m, &p, &size);
-    if(size > 255){
+    if(size > 9){
+      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "length", 0);
+	  m->error = 1;
       return 0;
     }
     memset(buf, 0, sizeof(char)*256);
@@ -611,6 +631,7 @@ static void mmc_parse_rest(mmc_t *m){
 
   if(get_track(m)->currenttime < 1){
     dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "timepointer", get_track(m)->currenttime, 1);
+    m->warning = 1;
     get_track(m)->currenttime = 1;
   }
 
@@ -679,11 +700,13 @@ static int mmc_parse_octave(mmc_t *m, int delta){
   int _octave = get_track(m)->octave + delta;
     if(_octave < 0){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 0);
+      m->warning = 1;
       _octave = 0;
     }
     if(_octave > 9){
-      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 9);
-      _octave = 9;
+      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 10);
+      m->warning = 1;
+      _octave = 10;
     }
     get_track(m)->octave = _octave;
     return 0;
@@ -705,15 +728,19 @@ static int mmc_parse_octave_change(mmc_t *m){
     int _octave = param.sign == 0 ? param.value : get_track(m)->octave + param.value * param.sign;
     if(_octave < 0){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 0);
+      m->warning = 1;
       _octave = 0;
     }
-    if(_octave > 9){
-      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 9);
-      _octave = 9;
+    if(_octave > 10){
+      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "octave", _octave, 10);
+      m->warning = 1;
+      _octave = 10;
     }
     get_track(m)->octave = _octave;
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Octave value");
+    m->error = 1;
     return -1;
   }
 }
@@ -733,15 +760,19 @@ static int mmc_parse_velocity(mmc_t *m){
     int _velocity = param.sign == 0 ? param.value : get_track(m)->velocity + param.value * param.sign;
     if(_velocity < 0){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "velocity", _velocity, 0);
+      m->warning = 1;
       _velocity = 0;
     }
     if(_velocity > 127){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "velocity", _velocity, 127);
+      m->warning = 1;
       _velocity = 127;
     }
     get_track(m)->velocity = _velocity;
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Velocity value");
+    m->error = 1;
     return -1;
   }
 }
@@ -759,18 +790,23 @@ static int mmc_parse_tempo(mmc_t *m){
   if(mmc_token_get_digit_param(m, &param)){
     if(param.sign != 0){
       dlog_add(MMC_MSG_WARNING_SIGN_IGNORED, line+1, column+1, "Tempo");
+      m->warning = 1;
     }
     if(param.value < 1){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "Tempo", param.value, 1);
+      m->warning = 1;
     }
     if(param.value > 999){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "Tempo", param.value, 999);
+      m->warning = 1;
     }
     track_t *t = get_track(m);
     smf0_t *s = m->smf0;
     smf0_add_tempo(s, t->currenttime - 1, param.value);
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Tempo value");
+	m->error = 1;
     return -1;
   }
 }
@@ -791,15 +827,19 @@ static int mmc_parse_gate(mmc_t *m){
     int _gate = param.sign == 0 ? param.value : get_track(m)->gate + param.value * param.sign;
     if(_gate < 0){
       dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "gate", _gate, 0);
+      m->warning = 1;
       _gate = 0;
     }
     if(_gate > 1000){
-      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "gate", _gate, 127);
+      dlog_add(MMC_MSG_WARNING_OUTOFRANGE, line+1, column+1, "gate", _gate, 1000);
+      m->warning = 1;
       _gate = 1000;
     }
     get_track(m)->gate = _gate;
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "gate number");
+    m->error = 1;
     return -1;
   }
 }
@@ -819,27 +859,35 @@ static int mmc_parse_cc(mmc_t *m){
   param_t param1;
   param_t param2;
 
-  if(mmc_token_get_digit_param(m, &param1) < 0){
+  if(mmc_token_get_digit_param(m, &param1) == 0){
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Control number");
+    m->error = 1;
     return -1;
   }else{
     if(param1.value < 0 || param1.value > 127){
       dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "y", param1.value);
-      return -1;
-    }
-  }
-  if(mmc_token_match(m, kTokenComma) < 0){
-    return -1;
-  }
-  m->lex_index ++;
-  if(mmc_token_get_digit_param(m, &param2) < 0){
-    return -1;
-  }else{
-    if(param2.value < 0 || param2.value > 127){
-      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "y", param2.value);
+      m->error = 1;
       return -1;
     }
   }
 
+  if(mmc_token_match(m, kTokenComma) == 0){
+    dlog_add(MMC_MSG_ERROR_SYNTAX, line+1, column+1, "Control Change");
+    m->error = 1;
+    return -1;
+  }
+  m->lex_index ++;
+  if(mmc_token_get_digit_param(m, &param2) == 0){
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Control value");
+    m->error = 1;
+    return -1;
+  }else{
+    if(param2.value < 0 || param2.value > 127){
+      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "y", param2.value);
+      m->error = 1;
+      return -1;
+    }
+  }
   
   smf0_add_controlchange(m->smf0, 
 			 get_track(m)->currenttime - 1, 
@@ -866,7 +914,7 @@ static int mmc_parse_track(mmc_t *m){
   param_t param;
   if(mmc_token_get_digit_param(m, &param)){
     int tracknum = param.sign == 0 ? param.value : param.value * param.sign;
-    printf(" Parsing track to %d\n", tracknum);
+    //    printf(" Parsing track to %d\n", tracknum);
     if(tracknum < 1 || tracknum > 16){
       dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "TR", tracknum);
       m->error = 1;
@@ -875,6 +923,8 @@ static int mmc_parse_track(mmc_t *m){
     m->currenttrack = param.value - 1;
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Track number");
+    m->error = 1;
     return -1;
   }
 }
@@ -883,20 +933,26 @@ static int mmc_parse_track(mmc_t *m){
  * mm_parse_program_change
  ****************************************************************/
 static int mmc_parse_program_change(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
   if(m->debug){
-    printf("Parsing track change %d\n", m->current_token->type);
+    printf("Parsing prog change %d\n", m->current_token->type);
   }
   m->lex_index ++;
 
   param_t param;
-  if(mmc_token_get_digit_param(m, &param) == 0){
+  if(mmc_token_get_digit_param(m, &param)){
     if(param.sign != 0 || param.value < 1 || param.value > 128){
-      printf("error!\n");
+      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "@", param.value);
+      m->error = 1;
       return -1;
     }
+    if(m->debug){printf("added %d\n", param.value-1);}
     mmc_add_program_change(m, param.value - 1);
     return 0;
   }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "program number");
+    m->error = 1;
     return -1;
   }
 }
@@ -924,6 +980,7 @@ static int mmc_parse_meta_long(mmc_t *m, int meta_type){
     return 0;
   }else{
     dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Meta String");
+	m->error = 1;
     return -1;
   }
 }
@@ -946,8 +1003,8 @@ static int mmc_parse_question(mmc_t *m){
  * mm_parse_bracket_start
  ****************************************************************/
 static int mmc_parse_bracket_start(mmc_t *m){
-  //  int line = m->current_token->line;
-  //  int column = m->current_token->column;
+  int line = m->current_token->line;
+  int column = m->current_token->column;
   int repeat = 2;
   param_t param;
   if(m->debug){
@@ -961,15 +1018,20 @@ static int mmc_parse_bracket_start(mmc_t *m){
   }
 
   if(m->bracket_stack_index == MMC_BRACKET_NEST_MAX){
-    // error!
-    if(m->debug){printf("bracket start max nest\n");}
+    dlog_add(MMC_MSG_ERROR_BRACKET_NEST_MAX, line+1, column+1);
+    //    if(m->debug){printf("bracket start max nest\n");}
     m->error = 1;
   }
   m->lex_index ++;
   if(mmc_token_get_digit_param(m, &param)){
     if(m->debug){printf("repeat %d\n", param.value);}
+    if(param.sign == -1 || param.value > 10 || param.value == 0){
+      dlog_add(MMC_MSG_ERROR_BRACKET_REPEAT_ILLEGAL, line+1, column+1);
+      m->error = 1;
+    }
     repeat = param.value;
   }
+
   mmc_bracket_t *b = &m->bracket_state[m->bracket_stack_index ++];
   if(m->debug){printf("   pushed %d\n", m->lex_index);}
   b->position = m->lex_index;
@@ -1020,11 +1082,13 @@ static int mmc_parse_colon(mmc_t *m){
   if(m->debug){
     printf("Parsing colon %d\n", m->current_token->type);
   }
-  //  int line = m->current_token->line;
-  //  int column = m->current_token->column;
+  int line = m->current_token->line;
+  int column = m->current_token->column;
   if(m->bracket_skipping){
     if(m->bracket_nest_level_during_skipping == 0){
       // found second colon at same nest level. warning !
+      dlog_add(MMC_MSG_ERROR_UNEXPECTED_TOKEN, line+1, column+1, "colon");
+      m->error = 1;
     }
     m->lex_index ++; 
     return 0;
@@ -1032,6 +1096,7 @@ static int mmc_parse_colon(mmc_t *m){
   if(m->bracket_stack_index == 0){
     // error!
     if(m->debug){printf("colon at stack 0\n");}
+    dlog_add(MMC_MSG_ERROR_UNEXPECTED_TOKEN, line+1, column+1, "colon");
     m->error = 1;
     return -1;
   }
@@ -1165,11 +1230,16 @@ static void mmc_parse(mmc_t *m){
       break;
     } // end of switch
     if(m->error){
-      dlog_add(MMC_MSG_ERROR_CONVERT_FAILED);
       break;
     }
   }
-  
+  if(m->bracket_stack_index != 0){
+    dlog_add(MMC_MSG_ERROR_BRACKET_NUMBER_MISMATCH);
+    m->error = 1;
+  }
+  if(m->error){
+    dlog_add(MMC_MSG_ERROR_CONVERT_FAILED);
+  }
 }
 
 /***************************************************************
@@ -1182,6 +1252,7 @@ int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
   mmc_parse(m);
   if(m->debug) smf0_dump(m->smf0);
   if(filename) smf0_save(m->smf0, filename);
+  if(m->error == 1) return -1;
   return 0;
 }
 
@@ -1190,10 +1261,11 @@ int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
  ****************************************************************/
 int mmc_parse_mml_file(mmc_t *m, const char *mml_filename, const char *mid_filename){
   lex_open(m->lex, mml_filename);
-  lex_parse(m->lex);
+  if(lex_parse(m->lex) != 0) return -1;
   if(m->debug) lex_dump_tokens(m->lex);
   mmc_parse(m);
   if (mid_filename) smf0_save(m->smf0, mid_filename);
+  if(m->error == 1) return -1;
   return 0;
 }
 
