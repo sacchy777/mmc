@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{8E17F47A-9EBB-4C51-BF05-A210C67C6F0A}" Name="Music Memo Pad" Language="1033" Version="0.0.1" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
-    <Package Id ="{7DBB04D1-EFE6-415E-8848-EF9F61804C32}" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+  <Product Id="{8036B186-AF24-4B71-8D3F-F31D5EBAA029}" Name="Music Memo Pad" Language="1033" Version="0.0.2" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
+    <Package Id ="{522B466A-4FB9-4E33-801A-C2E656AFE030}" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 		<MediaTemplate EmbedCab="yes"/>

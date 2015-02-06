@@ -1260,6 +1260,7 @@ int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
   if(m->debug) smf0_dump(m->smf0);
   if(filename) smf0_save(m->smf0, filename);
   if(m->error == 1) return -1;
+  dlog_add("test0.0.2\n");
   return 0;
 }
 

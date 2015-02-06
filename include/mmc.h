@@ -25,7 +25,7 @@ freely, subject to the following restrictions:
 #ifndef MMC_H
 #define MMC_H
 
-#define MMC_VERSION "0.1.0"
+#define MMC_VERSION "0.0.2"
 
 #define TRACK_NUM 16
 #include "smf0.h"
