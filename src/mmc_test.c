@@ -44,13 +44,21 @@ int cleanup(){
 
 #define FAILTEST(M) init(); mmc_parse_mml_string(m, M, NULL); CU_ASSERT(m->error == 1); cleanup()
 #define SUCCTEST(M) init(); mmc_parse_mml_string(m, M, NULL); CU_ASSERT(m->error == 0); cleanup()
-#define WARNTEST(M) init(); mmc_parse_mml_string(m, M, NULL); CU_ASSERT(m->warning == 1); cleanup()
+#define WARNTEST(M) init(); mmc_parse_mml_string(m, M, NULL); CU_ASSERT(m->error == 0 && m->warning == 1); cleanup()
 
 void note_test(){
   SUCCTEST("cdefgabcr");
   SUCCTEST("c4.^2|^1r1^2.^4");
   FAILTEST("c.^2|^1");
   SUCCTEST("c0e1^1");
+  SUCCTEST("c+++++ ----- +++++ ----- 4.");
+  SUCCTEST("n0");
+  SUCCTEST("n127");
+  FAILTEST("n128");
+  FAILTEST("n-1");
+  FAILTEST("n");
+  FAILTEST("n9999999999");
+
 }
 void param_test(){
   SUCCTEST("v0v127q0q999");
@@ -97,6 +105,11 @@ void param_test(){
   FAILTEST("[a");
   FAILTEST(":a");
   FAILTEST("[a:a:]");
+  FAILTEST("]");
+  FAILTEST("[0a]");
+  SUCCTEST("[1a]");
+  FAILTEST("[101a]");
+  SUCCTEST("[100a]");
 
 }
 
@@ -119,21 +132,21 @@ int main(int argc, char *argv[]){
   unit_test();
   /*
   mmc_t *m = mmc_create();
-  m->debug = 0;
-  m->lex->debug = 0;
+  m->debug = 1;
+  m->lex->debug = 1;
   //  mmc_parse_mml_string(m, "TR17a,+20,-80\nb,100,+30\nc,-50,-100", "c.mid");
   //    mmc_parse_mml_string(m, "$b36$s38 Tempo 150 TR10 #rhythm l16brrr srrr brrr srrr #end TR1c1 c1", "c.mid");
   //  mmc_parse_mml_string(m, "y7,100 cde y7,50 cde", "c.mid");
 //  mmc_parse_mml_string(m, "v10 c0d", "c.mid");
 //  mmc_parse_mml_string(m, "$a", "c.mid");
-  mmc_parse_mml_string(m, "[[[[[[[[[[[[[[[[[a]]]]]]]]]]]]]]]]]", "c.mid");
+  mmc_parse_mml_string(m, "na", "c.mid");
   //  mmc_parse_mml_string(m, "$b35$s38 TR10 #rhythm b", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
   printf("--log--\n");
   printf("%s",dlog_get());
   printf("--end of log--\n");
   mmc_destroy(m);
-*/
+  */
   return 0;
 }
 

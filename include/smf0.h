@@ -84,6 +84,9 @@ typedef struct {
   int start_from_enable;
   int question;
   int question_detected;
+  int error;
+  int warning;
+  int memory_used;
 } smf0_t;
 
 smf0_t *smf0_create();

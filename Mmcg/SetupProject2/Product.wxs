@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="{8E17F47A-9EBB-4C51-BF05-A210C67C6F0A}" Name="Music Memo Pad" Language="1033" Version="0.0.1" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
+    <Package Id ="{7DBB04D1-EFE6-415E-8848-EF9F61804C32}" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes"/>
+
+    <Feature Id="ProductFeature" Title="MusicMemoPadInstaller" Level="1">
+			<ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="Music Memo Pad" />
+			</Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Music Memo Pad" />
+      </Directory>
+    </Directory>
+    
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="{887A0E61-8D0E-4BCB-8C6A-CD84F2462728}">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+            Name="Music Memo Pad"
+            Description="My Application Description"
+            Target="[INSTALLFOLDER]Mmcg.exe"
+            WorkingDirectory="INSTALLFOLDER"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\sada.gussy\Music Memo Pad" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+  </Fragment>
+  
+	<Fragment>
+    <UIRef Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="..\..\license.rtf" />
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Guid="{6D43BE8A-8741-4958-A2CD-E5A40979EE0B}">
+        <File Source="$(var.Mmcg.TargetPath)" KeyPath="yes" />
+      </Component>
+      <Component Guid="{EC7CCB9C-BE6C-4447-864A-D98C941EE6E5}">
+        <File Source="..\..\mmc.dll" KeyPath="yes" />
+      </Component>
+      <Component Guid="{B4BC6A2C-29D2-426A-8C14-2A6AD0305518}">
+        <File Source="..\..\ctplay_bin\ctplay.exe" KeyPath="yes" />
+      </Component>
+      <Component Guid="{DF89AC1F-61D9-49CA-BDB5-95F72F925B95}">
+        <File Source="..\..\ctplay_bin\icon.bmp" KeyPath="yes" />
+      </Component>
+      <Component Guid="{70C1B4BB-7F21-4DD5-827E-BDA4CC6CD44C}">
+        <File Source="..\..\ctplay_bin\libfreetype-6.dll" KeyPath="yes" />
+      </Component>
+      <Component Guid="{F14C2399-C86D-4C0D-9D10-9D6D722E915E}">
+        <File Source="..\..\ctplay_bin\linesquare_rounded_extended.ttf" KeyPath="yes" />
+      </Component>
+      <Component Guid="{0FB7CBB7-A8AC-4EF8-921B-B3415D9FEDCE}">
+        <File Source="..\..\ctplay_bin\mid2wav_keyboard.bmp" KeyPath="yes" />
+      </Component>
+      <Component Guid="{F0060306-9F0F-45C8-AFE3-237A7026139A}">
+        <File Source="..\..\ctplay_bin\SDL2.dll" KeyPath="yes" />
+      </Component>
+      <Component Guid="{958419D7-BCAB-4277-BF8E-4F5621D7E276}">
+        <File Source="..\..\ctplay_bin\SDL2_ttf.dll" KeyPath="yes" />
+      </Component>
+      <Component Guid="{1A1B949A-9C16-4C2D-B8E3-B6F23C45F76F}">
+        <File Source="..\..\ctplay_bin\zlib1.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+
+  
+</Wix>

@@ -23,17 +23,24 @@ freely, subject to the following restrictions:
    distribution.
 */
 #include "smf0.h"
+#include "smf0_error.h"
 #include "dlog.h"
 #include <stdlib.h>
 #include <string.h>
+
 
 smf0_t *smf0_create(){
   int i;
   smf0_t *s;
   s = calloc(sizeof(smf0_t), 1);
+  if (!s) {
+    dlog_add(SMF0_MSG_ERROR_OUTOFMEMORY, __func__);
+    return NULL;
+  }
+  s->memory_used += sizeof(smf0_t);
   for(i = 0; i < MIDIEVENT_MAX; i ++){
     s->sort_events[i] = &s->events[i];
-	s->events[i].absolute_time = ABSOLUTE_TIME_MAX;
+    s->events[i].absolute_time = ABSOLUTE_TIME_MAX;
   }
   s->timebase = 480;
   return s;
@@ -48,9 +55,9 @@ void smf0_add_event_raw(smf0_t *s, int absolute_time, int type, int channel, int
   int i;
   static int error_detected = 0;
   if(s->index == MIDIEVENT_MAX){
-    // error!
     if(!error_detected){
-      dlog_add("Too many MIDI events");
+      dlog_add(SMF0_MSG_ERROR_TOOMANYEVENTS);
+      s->error = 1;
       error_detected = 1;
     }
     return;
@@ -149,7 +156,8 @@ void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_
 void smf0_add_question(smf0_t *s, int absolute_time){
 
   if(s->question == 1){
-    // dup! warning
+    dlog_add(SMF0_MSG_WARNING_QUESTION_DUPLICATED);
+    return;
   }
   midievent_t *e = &s->events[s->index ++];
   e->absolute_time = absolute_time;
@@ -182,7 +190,7 @@ void smf0_dump(smf0_t *s){
   int i;
   for(i = 0; i < MIDIEVENT_MAX; i ++){
     midievent_t *e = s->sort_events[i];
-	if(e->absolute_time == ABSOLUTE_TIME_MAX) continue;
+    if(e->absolute_time == ABSOLUTE_TIME_MAX) continue;
     printf("%09d : %02x %02x %02x\n", e->absolute_time, e->data[0], e->data[1], e->data[2]);
   }
 }
@@ -293,8 +301,9 @@ int smf0_save(smf0_t *s, const char *filename){
   unsigned char tracksize[4];
   fp = fopen(filename , "wb");
   if(!fp){
-    fprintf(stderr, "\n");
-	return -1;
+    dlog_add(SMF0_MSG_ERROR_SAVE_FAILED, filename);
+    s->error = 1;
+    return -1;
   }
   smf0_reorder(s);
   fwrite(header, 1, sizeof(header)/sizeof(char), fp);
@@ -312,6 +321,7 @@ int smf0_save(smf0_t *s, const char *filename){
   fclose(fp);
   return 0;
 }
+
 /*
 static void test_conv_deltatime(){
   unsigned char c[4];

@@ -463,6 +463,8 @@ static int mmc_parse_note(mmc_t *m){
  * 
  ****************************************************************/
 static int mmc_parse_note_number(mmc_t *m, int is_macro){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
   if(m->debug){
     printf("Parsing note number %d\n", m->current_token->type);
   }
@@ -488,12 +490,17 @@ static int mmc_parse_note_number(mmc_t *m, int is_macro){
 
   if(!is_macro){
     if(mmc_token_get_digit_param(m, &note_number)){
-      ;
+      if(note_number.sign == -1){
+	dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "Note number", note_number.sign * note_number.value);
+	m->error = 1;
+      }
     }else{
       //error
       if(m->debug){
 	printf("no note number");
       }
+      dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Note number");
+      m->error = 1;
       return 0;
     }
   }else{
@@ -1025,7 +1032,7 @@ static int mmc_parse_bracket_start(mmc_t *m){
   m->lex_index ++;
   if(mmc_token_get_digit_param(m, &param)){
     if(m->debug){printf("repeat %d\n", param.value);}
-    if(param.sign == -1 || param.value > 10 || param.value == 0){
+    if(param.sign == -1 || param.value > 100 || param.value == 0){
       dlog_add(MMC_MSG_ERROR_BRACKET_REPEAT_ILLEGAL, line+1, column+1);
       m->error = 1;
     }

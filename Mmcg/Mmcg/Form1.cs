@@ -36,14 +36,16 @@ namespace Mmcg
 
         private void close_player()
         {
+            if (!playing) return;
             try
-            {
-                if (playing) player.Kill();
+            { 
+                player.Kill();
+                player.WaitForExit();
                 playing = false;
             }
             catch (Exception)
             {
-                MessageBox.Show("Kill Fail", "Fail");
+                MessageBox.Show("Failed to kill player", "Debug");
             }
 
         }
