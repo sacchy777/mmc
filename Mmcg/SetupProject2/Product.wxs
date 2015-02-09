@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{8036B186-AF24-4B71-8D3F-F31D5EBAA029}" Name="Music Memo Pad" Language="1033" Version="0.0.2" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
-    <Package Id ="{522B466A-4FB9-4E33-801A-C2E656AFE030}" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+  <Product Id="{1ED06D55-E404-4F8A-BCB1-F00CBD465879}" Name="Music Memo Pad" Language="1033" Version="0.0.4" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 		<MediaTemplate EmbedCab="yes"/>
@@ -10,18 +10,17 @@
 			<ComponentGroupRef Id="ProductComponents" />
       <ComponentRef Id="ApplicationShortcut" />
     </Feature>
-	</Product>
 
-	<Fragment>
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFilesFolder">
-				<Directory Id="INSTALLFOLDER" Name="Music Memo Pad" />
-			</Directory>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Music Memo Pad" />
+      </Directory>
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ApplicationProgramsFolder" Name="Music Memo Pad" />
       </Directory>
     </Directory>
-    
+
     <DirectoryRef Id="ApplicationProgramsFolder">
       <Component Id="ApplicationShortcut" Guid="{887A0E61-8D0E-4BCB-8C6A-CD84F2462728}">
         <Shortcut Id="ApplicationStartMenuShortcut"
@@ -31,12 +30,14 @@
             WorkingDirectory="INSTALLFOLDER"/>
         <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
         <RegistryValue Root="HKCU" Key="Software\sada.gussy\Music Memo Pad" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+        <ProgId Id="MusicMemoPad.Document" Icon="Mmcg.exe" Description="Music Memo Pad Document">
+          <Extension Id="mmp" ContentType="application/mmp">
+            <Verb Id="open" Command="Open" TargetFile="Mmcg.exe" Argument="%1" />
+          </Extension>
+        </ProgId>
       </Component>
     </DirectoryRef>
 
-  </Fragment>
-  
-	<Fragment>
     <UIRef Id="WixUI_Minimal" />
     <WixVariable Id="WixUILicenseRtf" Value="..\..\license.rtf" />
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
@@ -71,7 +72,6 @@
         <File Source="..\..\ctplay_bin\zlib1.dll" KeyPath="yes" />
       </Component>
     </ComponentGroup>
-	</Fragment>
 
-  
+  </Product>  
 </Wix>

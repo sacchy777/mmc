@@ -17,6 +17,10 @@ namespace Mmcg
 {
     public partial class Form1 : Form
     {
+        const string Version = "Music Memo Pad 0.0.4";
+
+
+
         [DllImport("mmc.dll", CallingConvention = CallingConvention.Cdecl)]
         unsafe static extern int mmc_convert(string infilename, string outilename, [Out] StringBuilder msg);
 
@@ -26,7 +30,6 @@ namespace Mmcg
         [DllImport("mmc.dll", CallingConvention = CallingConvention.Cdecl)]
         unsafe static extern void mmc_version([Out] StringBuilder version);
 
-        const string Version = "MusicMemoPad 0.0.0(alpha)";
         bool textChanged = false;
         bool onceOpenedOrSaved = false;
         string currentFilename = "";
@@ -72,7 +75,7 @@ namespace Mmcg
             toolStripStatusLabel1.Text = "("+(line+1)+","+(column+1)+")";
         }
 
-        public Form1()
+        public Form1(string[] args)
         {
             InitializeComponent();
             /*
@@ -88,6 +91,11 @@ namespace Mmcg
             updateComboBox();
             toolStripComboBox1.SelectedIndex = 0;
             updateStatusBar();
+
+            if (args.Length == 1)
+            {
+                loadFile(args[0]);
+            }
         }
 
         private void play_music()
@@ -184,13 +192,23 @@ namespace Mmcg
             if (result != DialogResult.OK) return false; else return true;
         }
 
+        private void loadFile(string filename)
+        {
+            StreamReader sr = new StreamReader(filename, true);
+            currentFilename = filename;
+            textBox1.Text = sr.ReadToEnd();
+            onceOpenedOrSaved = true;
+            textChanged = false;
+            this.Text = Version + " " + currentFilename;
+        }
+
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (confirmDiscardOkay() == false) return;
             openFileDialog1.Title = "Open";            
-            openFileDialog1.FileName = "Untitled.mml";
+            openFileDialog1.FileName = "Untitled.mmp";
             openFileDialog1.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            openFileDialog1.Filter = "MML file|*.mml|All files(*.*)|*.*";
+            openFileDialog1.Filter = "Music Memo Pad file|*.mmp|Text file|*.txt|All files(*.*)|*.*";
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 using (Stream fileStream = openFileDialog1.OpenFile())
@@ -358,6 +376,20 @@ namespace Mmcg
         private void textBox1_KeyUp(object sender, KeyEventArgs e)
         {
             updateStatusBar();
+        }
+
+        private void Form1_DragDrop(object sender, DragEventArgs e)
+        {
+            string filename = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+            loadFile(filename);
+        }
+
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
         }
 
     }
