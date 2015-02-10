@@ -77,6 +77,7 @@ typedef struct {
   mmc_bracket_t bracket_state[MMC_BRACKET_NEST_MAX];
   int bracket_skipping;
   int bracket_nest_level_during_skipping;
+  int global_key;
 } mmc_t;
 
 mmc_t *mmc_create();

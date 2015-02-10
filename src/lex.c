@@ -64,6 +64,8 @@ static const token_type_t keywords[] = {
   {kTokenTrackName, "TrackName"},
   {kTokenCopyright, "Copyright"},
 
+  {kTokenKey, "Key"},
+
   {kTokenNoteA, "a"},
   {kTokenNoteB, "b"},
   {kTokenNoteC, "c"},

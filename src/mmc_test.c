@@ -32,6 +32,7 @@ freely, subject to the following restrictions:
 mmc_t *m;
 
 int init(){
+  dlog_clear();
   m = mmc_create();
   return 0;
 }
@@ -110,6 +111,12 @@ void param_test(){
   SUCCTEST("[1a]");
   FAILTEST("[101a]");
   SUCCTEST("[100a]");
+  SUCCTEST("Key-24");
+  SUCCTEST("Key24");
+  SUCCTEST("Key+24");
+  FAILTEST("Key-25");
+  FAILTEST("Key25");
+  FAILTEST("Key+25");
 
 }
 
@@ -130,7 +137,7 @@ void unit_test(){
 int main(int argc, char *argv[]){
   dlog_clear();
   unit_test();
-  /*
+  dlog_clear();
   mmc_t *m = mmc_create();
   m->debug = 1;
   m->lex->debug = 1;
@@ -139,14 +146,14 @@ int main(int argc, char *argv[]){
   //  mmc_parse_mml_string(m, "y7,100 cde y7,50 cde", "c.mid");
 //  mmc_parse_mml_string(m, "v10 c0d", "c.mid");
 //  mmc_parse_mml_string(m, "$a", "c.mid");
-  mmc_parse_mml_string(m, "na", "c.mid");
+  mmc_parse_mml_string(m, "Key-1cde", "c.mid");
   //  mmc_parse_mml_string(m, "$b35$s38 TR10 #rhythm b", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
   printf("--log--\n");
   printf("%s",dlog_get());
   printf("--end of log--\n");
   mmc_destroy(m);
-  */
+
   return 0;
 }
 

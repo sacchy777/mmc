@@ -137,6 +137,13 @@ void smf0_add_tempo(smf0_t *s, int absolute_time, int tempo){
   smf0_add_event_raw(s, absolute_time, 0xFF, 0, 5, data); 
 }
 
+void smf0_add_endoftrack(smf0_t *s, int absolute_time){
+  unsigned char data[2];
+  data[0] = 0x2F;
+  data[1] = 0x00;
+  smf0_add_event_raw(s, absolute_time, 0xFF, 0, 2, data); 
+}
+
 
 
 void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_string, int meta_len){
@@ -310,9 +317,12 @@ int smf0_save(smf0_t *s, const char *filename){
 
   smf0_write_event(s, fp);
 
+  /*
+    // end of track shall be inserted by user
   size = sizeof(trailer)/sizeof(char); 
   fwrite(trailer, 1, size, fp);
   s->tracksize += size;
+  */
 
   conv_be32(s->tracksize, tracksize);
   fseek(fp, sizeof(header)/sizeof(unsigned char) - 4, SEEK_SET);

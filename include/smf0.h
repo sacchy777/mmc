@@ -103,6 +103,7 @@ void smf0_add_tempo(smf0_t *s, int absolute_time, int tempo);
 void smf0_dump(smf0_t *s);
 int smf0_save(smf0_t *s, const char *filename);
 void smf0_add_note_ex(smf0_t *s, int absolute_time, int channel, int octave, int key, int sharp, float length, int velocity);
+void smf0_add_endoftrack(smf0_t *s, int absolute_time);
 int smf0_get_key(int octave, int key, int sharp);
 void smf0_add_note(smf0_t *s, int absolute_time, int channel, int key, float length, int velocity);
 void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_string, int meta_len);

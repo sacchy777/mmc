@@ -19,8 +19,6 @@ namespace Mmcg
     {
         const string Version = "Music Memo Pad 0.0.4";
 
-
-
         [DllImport("mmc.dll", CallingConvention = CallingConvention.Cdecl)]
         unsafe static extern int mmc_convert(string infilename, string outilename, [Out] StringBuilder msg);
 
@@ -33,6 +31,7 @@ namespace Mmcg
         bool textChanged = false;
         bool onceOpenedOrSaved = false;
         string currentFilename = "";
+        string currentDirectory = "";
 
         System.Diagnostics.Process player;
         bool playing = false;
@@ -92,6 +91,9 @@ namespace Mmcg
             toolStripComboBox1.SelectedIndex = 0;
             updateStatusBar();
 
+            currentFilename = "Untitled.mmp";
+            currentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+
             if (args.Length == 1)
             {
                 loadFile(args[0]);
@@ -115,7 +117,6 @@ namespace Mmcg
             string filename = "temp.mid";
             string fullpath_filename = "\"" + Path.GetFullPath(filename) + "\"";
 
-
             player = new System.Diagnostics.Process();
             if (!form2.isShowPlayer())
             {
@@ -123,17 +124,30 @@ namespace Mmcg
                 player.StartInfo.UseShellExecute = true;
                 player.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             }
-            player.StartInfo.FileName = "\"" + program_name + "\"";
-            player.StartInfo.Arguments = option + " " + fullpath_filename;
-            try {
-                player.Start();
-                playing = true;
-            }
-            catch (Exception)
-            {
-                textBox2.Text += "Failed starting player.\r\n";
-            }
 
+            string[] execPaths = {"",Application.ExecutablePath};
+            bool playresult = false;
+            foreach(string path in execPaths){
+                player.StartInfo.FileName = "\"" + path + program_name + "\"";
+                player.StartInfo.Arguments = option + " " + fullpath_filename;
+                try { 
+                    playresult = player.Start();
+                    if (playresult)
+                    {
+                        playing = true;
+//                        MessageBox.Show(player.StartInfo.FileName,"player");
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    ; // do nothing
+                }
+            }
+            if (!playresult)
+            {
+                textBox2.Text += "[ERROR]Failed to invoke player.\n";
+            }
 
         }
 
@@ -196,6 +210,8 @@ namespace Mmcg
         {
             StreamReader sr = new StreamReader(filename, true);
             currentFilename = filename;
+            currentDirectory = Path.GetDirectoryName(filename);
+//            MessageBox.Show("dir="+currentDirectory,"dir");
             textBox1.Text = sr.ReadToEnd();
             onceOpenedOrSaved = true;
             textChanged = false;
@@ -246,9 +262,9 @@ namespace Mmcg
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             saveFileDialog1.Title = "Save As";
-            saveFileDialog1.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            saveFileDialog1.FileName = "Untitled.mml";
-            saveFileDialog1.Filter = "MML file(.mml)|*.mml|All files(*.*)|*.*";
+            saveFileDialog1.InitialDirectory = currentDirectory;
+            saveFileDialog1.FileName = currentFilename;
+            saveFileDialog1.Filter = "MML file(.mmp)|*.mmp|Text file|*.txt|All files(*.*)|*.*";
             if (saveFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 using (Stream fileStream = saveFileDialog1.OpenFile())

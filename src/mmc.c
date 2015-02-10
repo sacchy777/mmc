@@ -209,7 +209,7 @@ static void mmc_add_note_number(mmc_t *m, int note, double length, param_t *gate
 }
 
 static void mmc_add_note(mmc_t *m, int key, int sharp, double length, param_t *gate, param_t *velocity, param_t *timing, int off_pending){
-  int note = get_track(m)->octave * 12 + key + sharp;
+  int note = get_track(m)->octave * 12 + key + sharp + m->global_key;
   mmc_add_note_number(m, note, length, gate, velocity, timing, off_pending);
 }
 
@@ -965,6 +965,36 @@ static int mmc_parse_program_change(mmc_t *m){
 }
 
 /***************************************************************
+ * mm_parse_key
+ ****************************************************************/
+static int mmc_parse_key(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+  int key = 0;
+  if(m->debug){
+    printf("Parsing key change %d\n", m->current_token->type);
+  }
+  m->lex_index ++;
+
+  param_t param;
+  if(mmc_token_get_digit_param(m, &param)){
+    key = param.sign == 0 ? param.value : param.value * param.sign;
+    if(key < -24 || key > 24){
+      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "Key", key);
+      m->error = 1;
+      return -1;
+    }
+    if(m->debug){printf("key %d\n", key);}
+    m->global_key = key;
+    return 0;
+  }else{
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Key number");
+    m->error = 1;
+    return -1;
+  }
+}
+
+/***************************************************************
  * mm_parse_meta
  ****************************************************************/
 static int mmc_parse_meta_long(mmc_t *m, int meta_type){
@@ -1116,6 +1146,25 @@ static int mmc_parse_colon(mmc_t *m){
   return 0;
 }
 
+
+
+static void add_endoftrack(mmc_t *m){
+  int absolute_max = 0;
+  int i;
+  for(i = 0; i < TRACK_NUM; i ++){
+    if(absolute_max < m->tracks[i].currenttime){
+      absolute_max = m->tracks[i].currenttime;
+    }
+  }
+  if(absolute_max == 0){
+    // ?
+  }
+  if(m->debug){
+    printf("endoftrack %d\n", absolute_max);
+  }
+  smf0_add_endoftrack(m->smf0, absolute_max);
+}
+
 /***************************************************************
  * mmc_parse
  ****************************************************************/
@@ -1223,6 +1272,11 @@ static void mmc_parse(mmc_t *m){
       mmc_parse_program_change(m);
       break;
 
+    case kTokenKey:
+      if(m->bracket_skipping){m->lex_index ++; break;}
+      mmc_parse_key(m);
+      break;
+
     case kTokenTempo:
       if(m->bracket_skipping){m->lex_index ++; break;}
       mmc_parse_tempo(m);
@@ -1246,6 +1300,8 @@ static void mmc_parse(mmc_t *m){
   }
   if(m->error){
     dlog_add(MMC_MSG_ERROR_CONVERT_FAILED);
+  }else{
+    add_endoftrack(m);
   }
 }
 
@@ -1260,7 +1316,7 @@ int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
   if(m->debug) smf0_dump(m->smf0);
   if(filename) smf0_save(m->smf0, filename);
   if(m->error == 1) return -1;
-  dlog_add("test0.0.2\n");
+  dlog_add("test0.0.2b\n");
   return 0;
 }
 
