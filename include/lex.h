@@ -29,6 +29,7 @@ freely, subject to the following restrictions:
 enum {
   kTokenNone = 0,
   kTokenDigit,
+  kTokenHexDigit,
   kTokenLiteral,
 
   kTokenNoteA,
@@ -55,6 +56,7 @@ enum {
   kTokenProgramChange,
 
   kTokenKey,
+  kTokenSysEx,
   
   kTokenOctave,
   kTokenVelocity,

@@ -37,6 +37,9 @@ freely, subject to the following restrictions:
 #define MMC_MSG_ERROR_BRACKET_NEST_MAX "[MMC ERROR(%d:%d)] bracket nest max reached."
 #define MMC_MSG_ERROR_BRACKET_REPEAT_ILLEGAL "[MMC ERROR(%d:%d)] bracket repeat number illegal."
 #define MMC_MSG_ERROR_BRACKET_NUMBER_MISMATCH "[MMC ERROR] bracket number mismatch."
+#define MMC_MSG_ERROR_TOOMANYPARAMS "[MMC ERROR(%d:%d)] %s too many parameters."
+#define MMC_MSG_ERROR_SHORTOFPARAMS "[MMC ERROR(%d:%d)] %s short of parameters."
+#define MMC_MSG_ERROR_INVALIDPARAMS "[MMC ERROR(%d:%d)] %s invalid parameter values."
 
 #endif
 

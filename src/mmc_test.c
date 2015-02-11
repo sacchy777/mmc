@@ -69,28 +69,34 @@ void param_test(){
   SUCCTEST("v+27");
   WARNTEST("v+28");
   FAILTEST("v");
+
   SUCCTEST("q-80");
   SUCCTEST("q+920");
   WARNTEST("q+921");
   FAILTEST("q");
   WARNTEST("q-81");
+
   SUCCTEST("TR1");
   SUCCTEST("TR16");
   FAILTEST("TR");
   FAILTEST("TR0");
   FAILTEST("TR-1");
   FAILTEST("TR17");
+
   SUCCTEST("o0o10");
   FAILTEST("o");
   SUCCTEST("o-5");
   SUCCTEST("o+5");
   WARNTEST("o-6");
   WARNTEST("o+6");
+
   WARNTEST("r-4");
+
   SUCCTEST("Tempo1 Tempo999");
   FAILTEST("Tempo");
   WARNTEST("Tempo-1");
   WARNTEST("Tempo1000");
+
   SUCCTEST("y0,0 y127,127");
   FAILTEST("y128,1");
   FAILTEST("y1,128");
@@ -98,9 +104,11 @@ void param_test(){
   FAILTEST("y,");
   FAILTEST("y0,");
   FAILTEST("y,0");
+
   SUCCTEST("@1@128");
   FAILTEST("@0");
   FAILTEST("@129");
+
   FAILTEST("[[[[[[[[[[[[[[[[[a]]]]]]]]]]]]]]]]]");
   SUCCTEST("[[[[[[[[[[[[[[[[a]]]]]]]]]]]]]]]]"); // but fails due to too many midi events
   FAILTEST("[a");
@@ -111,12 +119,69 @@ void param_test(){
   SUCCTEST("[1a]");
   FAILTEST("[101a]");
   SUCCTEST("[100a]");
+
   SUCCTEST("Key-24");
   SUCCTEST("Key24");
   SUCCTEST("Key+24");
   FAILTEST("Key-25");
   FAILTEST("Key25");
   FAILTEST("Key+25");
+
+  FAILTEST("SysEx abc");
+  FAILTEST("SysEx F0h,F7h");
+  FAILTEST("SysEx G0h,F7h");
+  FAILTEST("SysEx xxh,yyh");
+  FAILTEST("SysEx F0h,80h, F7h"); // params shall be 00-7f except start f0 and end f7
+  FAILTEST("SysEx F0h,FFh, F7h"); // 
+  SUCCTEST("SysEx F0h,00h, F7h");
+  SUCCTEST("SysEx F0h,7fh, F7h");
+  SUCCTEST("SysEx f0h,11h, f7h");
+  FAILTEST("SysEx f1h,11h, f7h");
+  FAILTEST("SysEx f0h,11h, f6h");
+  SUCCTEST("SysEx f0H,7eH,7fh,09h,01h,F7h cde"); // GM System On
+  FAILTEST("SysEx f0H,7e,7fh,09h,01h,F7h cde"); // GM System On
+  SUCCTEST("SysEx f0H,41h,20h,42h,12h,40h,00h,7fh,00h,41h,f7h cde"); // GS Reset
+  SUCCTEST("SysEx f0H,43h,10h,4ch,00h,00h,7eh,00h,f7h cde"); // XG System On
+  SUCCTEST("SysEx f0H,43h,10h,4ch,00h,00h,7eh,00h,f7h cde"); // XG System On
+  FAILTEST("SysEx"
+	   "f0h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,f7h"); // 255 bytes 
+  SUCCTEST("SysEx"
+	   "f0h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,f7h"); // 254 bytes 
+
+  SUCCTEST("Copyright\"copyright name\"");
+  SUCCTEST("TrackName    \n\"track name\"");
+  FAILTEST("Copyright\"copyright name");
+  FAILTEST("TrackName track name\"");
 
 }
 
@@ -146,7 +211,7 @@ int main(int argc, char *argv[]){
   //  mmc_parse_mml_string(m, "y7,100 cde y7,50 cde", "c.mid");
 //  mmc_parse_mml_string(m, "v10 c0d", "c.mid");
 //  mmc_parse_mml_string(m, "$a", "c.mid");
-  mmc_parse_mml_string(m, "Key-1cde", "c.mid");
+  mmc_parse_mml_string(m, "TrackName\"trac\" c", "c.mid");
   //  mmc_parse_mml_string(m, "$b35$s38 TR10 #rhythm b", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
   printf("--log--\n");

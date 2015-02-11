@@ -275,6 +275,33 @@ static int mmc_token_get_digit_param(mmc_t *m, param_t *param){
   }
 }
 
+/***************************************************************
+ * 
+ ****************************************************************/
+static int get_hex(char *p){
+  if(*p >= '0' && *p <= '9') return *p - '0';
+  if(*p >= 'a' && *p <= 'f') return *p - 'a' + 10;
+  if(*p >= 'A' && *p <= 'F') return *p - 'A' + 10;
+  return 0;
+}
+
+static int mmc_token_get_hexdigit_param(mmc_t *m, char *hex){
+  int size;
+  char *p;
+  int value = 0;
+  if(mmc_token_match(m, kTokenHexDigit)){
+    mmc_token_get_string(m, &p, &size);
+    value = get_hex(p);
+    value *= 16;
+    value += get_hex(p+1);
+    *hex = value;
+    m->lex_index ++;
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
 
 /***************************************************************
  * 
@@ -994,6 +1021,98 @@ static int mmc_parse_key(mmc_t *m){
   }
 }
 
+
+
+
+
+
+
+
+
+static int mmc_parse_sysex(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+  int i;
+  if(m->debug){
+    printf("Parsing sysex %d\n", m->current_token->type);
+  }
+  m->lex_index ++;
+
+  int param_index = 0;
+  char sysex[256];
+
+  if(mmc_token_get_hexdigit_param(m, &sysex[param_index]) == 0){
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "SysEx");
+    m->error = 1;
+    return -1;
+  }
+
+  param_index ++;
+
+  
+  while(1){
+    if(param_index == 255){
+      dlog_add(MMC_MSG_ERROR_TOOMANYPARAMS, line+1, column+1, "SysEx");
+      // too many
+      m->error = 1;
+      return -1;
+    }
+
+    if(mmc_token_match(m, kTokenComma) == 0) break;
+    m->lex_index ++;
+
+    if(mmc_token_get_hexdigit_param(m, &sysex[param_index]) == 0){
+      dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "SysEx");
+      m->error = 1;
+      return -1;
+    }
+
+    param_index ++;
+
+  }
+
+  if(param_index <= 2){
+    dlog_add(MMC_MSG_ERROR_SHORTOFPARAMS, line+1, column+1, "SysEx");
+    m->error = 1;
+    return -1;
+  }
+
+  if(
+     sysex[0] != (char)0xF0 ||
+     sysex[param_index -1] != (char)0xF7
+     ){
+    dlog_add(MMC_MSG_ERROR_INVALIDPARAMS, line+1, column+1, "SysEx");
+    m->error = 1;
+    return -1;
+  }
+
+  for(i = 1; i < param_index - 1; i ++){
+    if(sysex[i] < 0){
+      dlog_add(MMC_MSG_ERROR_INVALIDPARAMS, line+1, column+1, "SysEx");
+      m->error = 1;
+      return -1;
+    }
+  }
+  
+  if(m->debug){
+    int j;
+    printf("sysex : ");
+    for(j = 0; j < param_index; j ++){
+      printf("%02x ", sysex[j]);
+    }
+    printf("\n");
+  }
+
+  smf0_add_direct(m->smf0, 
+		  get_track(m)->currenttime - 1, 
+		  sysex,
+		  param_index);
+  
+  return 0;
+}
+
+
+
 /***************************************************************
  * mm_parse_meta
  ****************************************************************/
@@ -1282,6 +1401,11 @@ static void mmc_parse(mmc_t *m){
       mmc_parse_tempo(m);
       break;
 
+    case kTokenSysEx:
+      if(m->bracket_skipping){m->lex_index ++; break;}
+      mmc_parse_sysex(m);
+      break;
+
     default:
       if(m->bracket_skipping){m->lex_index ++; break;}
       dlog_add(MMC_MSG_ERROR_UNSUPPORTED_TOKEN,
@@ -1309,14 +1433,22 @@ static void mmc_parse(mmc_t *m){
  * mmc_parse_mml_string
  ****************************************************************/
 int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
-  if(lex_open_string(m->lex, mml) != 0) return -1;
-  if(lex_parse(m->lex) != 0) return -1;
+  if(lex_open_string(m->lex, mml) != 0){
+    m->error = 1;
+    return -1;
+  }
+  if(lex_parse(m->lex) != 0){
+    m->error = 1;
+    return -1;
+  }
   if(m->debug) lex_dump_tokens(m->lex);
   mmc_parse(m);
   if(m->debug) smf0_dump(m->smf0);
   if(filename) smf0_save(m->smf0, filename);
   if(m->error == 1) return -1;
-  dlog_add("test0.0.2b\n");
+
+  dlog_add("test0.0.2c\n");
+
   return 0;
 }
 
@@ -1325,7 +1457,10 @@ int mmc_parse_mml_string(mmc_t *m, const char *mml, const char *filename){
  ****************************************************************/
 int mmc_parse_mml_file(mmc_t *m, const char *mml_filename, const char *mid_filename){
   lex_open(m->lex, mml_filename);
-  if(lex_parse(m->lex) != 0) return -1;
+  if(lex_parse(m->lex) != 0){
+    m->error = 1;
+    return -1;
+  }
   if(m->debug) lex_dump_tokens(m->lex);
   mmc_parse(m);
   if (mid_filename) smf0_save(m->smf0, mid_filename);

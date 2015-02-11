@@ -65,6 +65,7 @@ static const token_type_t keywords[] = {
   {kTokenCopyright, "Copyright"},
 
   {kTokenKey, "Key"},
+  {kTokenSysEx, "SysEx"},
 
   {kTokenNoteA, "a"},
   {kTokenNoteB, "b"},
@@ -266,13 +267,37 @@ static int lex_get_digit(lex_t *lex){
 /***************************************************************
  * 
  ****************************************************************/
+static int is_hex(char *p){
+  return (*p >= '0' && *p <= '9') ||
+    (*p >= 'a' && *p <= 'f') ||
+    (*p >= 'A' && *p <= 'F');
+}
+
+static int lex_is_hex8bit(lex_t *lex){
+  char *p = lex->pos;
+  if(*p == 0) return 0;
+  if(!is_hex(p)) return 0;
+  p ++;
+  if(*p == 0) return 0;
+  if(!is_hex(p)) return 0;
+  p ++;
+  if(*p == 0) return 0;
+  if(*p == 'h' || *p == 'H') return 1;
+  return 0;
+}
+
+
+
+/***************************************************************
+ * 
+ ****************************************************************/
 static const char *normal_delims = " \r\n\t|";
 static const char *comment1_start = "/*";
 static const char *comment1_end = "*/";
 static const char *comment2_start = "//";
 static const char *comment2_end = "\n";
-static const char *literal_start = "{\"";
-static const char *literal_end = "\"}";
+static const char *literal_start = "\"";
+static const char *literal_end = "\"";
 
 
 static const char *rhythm_mode_start = "#rhythm";
@@ -404,6 +429,16 @@ static int lex_parse_normal(lex_t *lex){
 
   if(lex->debug) printf("Parsing at line %d(%d) [%c(%d)]\n", lex->line, lex->column, *lex->pos, *lex->pos);
 
+  if(lex_is_hex8bit(lex) != 0){
+    if(lex_add_token(lex, lex->pos - lex->body, 3, kTokenHexDigit, lex->line, lex->column, 0) != 0){
+      return -1;
+    }
+    lex->pos += 3;
+    lex->column += 3;
+    if(lex->debug) printf("  matched hex digit %d\n", len);
+    return 0;
+  }
+
   /* parse digit */
   len = lex_is_digit(lex);
   if(len > 0){
@@ -415,6 +450,7 @@ static int lex_parse_normal(lex_t *lex){
     if(lex->debug) printf("  matched digit %d\n", len);
     return 0;
   }
+
 
   /* parse keywords */
   for(i = 0; i < sizeof(keywords)/sizeof(token_type_t); i ++){
@@ -485,7 +521,7 @@ static int lex_parse_pair(lex_t *lex){
 	lex->column = 0;
       }
       if(lex->state == kStateLiteral){
-	literal_len = lex->pos - start - 2;
+	literal_len = lex->pos - start - 1;
 	if(lex->debug) printf("  matched literal pos %d size %d\n", (int)(start - lex->body), literal_len);
 	if(lex_add_token(lex, start - lex->body, literal_len, kTokenLiteral, start_line, start_column, 0) != 0){
 	  return -1;

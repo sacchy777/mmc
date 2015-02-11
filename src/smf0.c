@@ -47,6 +47,15 @@ smf0_t *smf0_create(){
 }
 
 void smf0_destroy(smf0_t *s){
+  int i;
+  midievent_t *e;
+  for(i = 0; i < MIDIEVENT_MAX; i ++){
+    e = &s->events[i];
+    if(e->extended_type == SMF0_EXT_DIRECT){
+      //      printf("*** free direct mem %d\n", e->long_msg_len);
+      free(e->long_msg);
+    }
+  }
   free(s);
 }
 
@@ -159,6 +168,17 @@ void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_
   e->long_msg = meta_string;
 }
 
+void smf0_add_direct(smf0_t *s, int absolute_time, char *string, int len){
+
+  midievent_t *e = &s->events[s->index ++];
+  e->absolute_time = absolute_time;
+  e->extended_type = SMF0_EXT_DIRECT;
+  e->long_msg_len = len;
+  e->long_msg = calloc(sizeof(char) * len, sizeof(char));
+  //  printf("*** hunt direct mem %d\n", e->long_msg_len);
+  memcpy(e->long_msg, string, len);
+}
+
 
 void smf0_add_question(smf0_t *s, int absolute_time){
 
@@ -212,11 +232,11 @@ static unsigned char header[] = {
   0x00, 0x00, 0x00, 0x00, /* 4bytes length*/
 };
 
-static unsigned char trailer [] = {
-  0x83, 0x60, /* delta time 480 ticks */
-  0xff, 0x2f, /* end of track */
-  0x00, /* */
-};
+//static unsigned char trailer [] = {
+//  0x83, 0x60, /* delta time 480 ticks */
+//  0xff, 0x2f, /* end of track */
+//  0x00, /* */
+//};
 
 static void conv_be32(int value, unsigned char *be){
   be[3] = value & 0xff;
@@ -293,7 +313,8 @@ static void smf0_write_event(smf0_t *s, FILE *fp){
       s->tracksize += e->datasize;
     }
 
-    if(e->extended_type == SMF0_EXT_META_LONG){
+    if(e->extended_type == SMF0_EXT_META_LONG || 
+       e->extended_type == SMF0_EXT_DIRECT){
       fwrite(e->long_msg, 1, e->long_msg_len, fp);
       s->tracksize += e->long_msg_len;
     }
@@ -304,7 +325,7 @@ static void smf0_write_event(smf0_t *s, FILE *fp){
 
 int smf0_save(smf0_t *s, const char *filename){
   FILE *fp;
-  int size;
+  //  int size;
   unsigned char tracksize[4];
   fp = fopen(filename , "wb");
   if(!fp){
