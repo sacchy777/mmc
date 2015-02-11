@@ -128,6 +128,7 @@ void param_test(){
   FAILTEST("Key+25");
 
   FAILTEST("SysEx abc");
+  FAILTEST("SysEx f0h,,f7h");
   FAILTEST("SysEx F0h,F7h");
   FAILTEST("SysEx G0h,F7h");
   FAILTEST("SysEx xxh,yyh");
@@ -151,15 +152,7 @@ void param_test(){
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,f7h"); // 255 bytes 
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,f7h"); // 128 bytes 
   SUCCTEST("SysEx"
 	   "f0h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
@@ -168,15 +161,7 @@ void param_test(){
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,f7h"); // 254 bytes 
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,f7h"); // 126 bytes 
 
   SUCCTEST("Copyright\"copyright name\"");
   SUCCTEST("TrackName    \n\"track name\"");
@@ -211,7 +196,7 @@ int main(int argc, char *argv[]){
   //  mmc_parse_mml_string(m, "y7,100 cde y7,50 cde", "c.mid");
 //  mmc_parse_mml_string(m, "v10 c0d", "c.mid");
 //  mmc_parse_mml_string(m, "$a", "c.mid");
-  mmc_parse_mml_string(m, "TrackName\"trac\" c", "c.mid");
+  mmc_parse_mml_string(m, "SysEx f0h,11h,f7h c", "c.mid");
   //  mmc_parse_mml_string(m, "$b35$s38 TR10 #rhythm b", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
   printf("--log--\n");

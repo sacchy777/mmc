@@ -1039,7 +1039,7 @@ static int mmc_parse_sysex(mmc_t *m){
   m->lex_index ++;
 
   int param_index = 0;
-  char sysex[256];
+  char sysex[128];
 
   if(mmc_token_get_hexdigit_param(m, &sysex[param_index]) == 0){
     dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "SysEx");
@@ -1051,7 +1051,7 @@ static int mmc_parse_sysex(mmc_t *m){
 
   
   while(1){
-    if(param_index == 255){
+    if(param_index == 128){
       dlog_add(MMC_MSG_ERROR_TOOMANYPARAMS, line+1, column+1, "SysEx");
       // too many
       m->error = 1;
@@ -1066,7 +1066,6 @@ static int mmc_parse_sysex(mmc_t *m){
       m->error = 1;
       return -1;
     }
-
     param_index ++;
 
   }
@@ -1103,7 +1102,7 @@ static int mmc_parse_sysex(mmc_t *m){
     printf("\n");
   }
 
-  smf0_add_direct(m->smf0, 
+  smf0_add_sysex(m->smf0, 
 		  get_track(m)->currenttime - 1, 
 		  sysex,
 		  param_index);

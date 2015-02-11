@@ -168,15 +168,17 @@ void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_
   e->long_msg = meta_string;
 }
 
-void smf0_add_direct(smf0_t *s, int absolute_time, char *string, int len){
+void smf0_add_sysex(smf0_t *s, int absolute_time, char *string, int len){
 
   midievent_t *e = &s->events[s->index ++];
   e->absolute_time = absolute_time;
   e->extended_type = SMF0_EXT_DIRECT;
-  e->long_msg_len = len;
-  e->long_msg = calloc(sizeof(char) * len, sizeof(char));
+  e->long_msg_len = len + 1;
+  e->long_msg = calloc(sizeof(char) * (len+1) , sizeof(char));
   //  printf("*** hunt direct mem %d\n", e->long_msg_len);
-  memcpy(e->long_msg, string, len);
+  e->long_msg[0] = string[0];
+  e->long_msg[1] = len - 1;
+  memcpy(e->long_msg + 2, string + 1, len - 1);
 }
 
 

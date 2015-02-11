@@ -109,6 +109,7 @@ int smf0_get_key(int octave, int key, int sharp);
 void smf0_add_note(smf0_t *s, int absolute_time, int channel, int key, float length, int velocity);
 void smf0_add_meta_long(smf0_t *s, int absolute_time, int meta_type, char *meta_string, int meta_len);
 void smf0_add_question(smf0_t *s, int absolute_time);
-void smf0_add_direct(smf0_t *s, int absolute_time, char *string, int len);
+
+void smf0_add_sysex(smf0_t *s, int absolute_time, char *string, int len);
 
 #endif
