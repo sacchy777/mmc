@@ -59,6 +59,7 @@ void note_test(){
   FAILTEST("n-1");
   FAILTEST("n");
   FAILTEST("n9999999999");
+  SUCCTEST("c********+++++---");
 
 }
 void param_test(){
@@ -119,13 +120,14 @@ void param_test(){
   SUCCTEST("[1a]");
   FAILTEST("[101a]");
   SUCCTEST("[100a]");
+  FAILTEST("[cTR2]d");
 
-  SUCCTEST("Key-24");
-  SUCCTEST("Key24");
-  SUCCTEST("Key+24");
-  FAILTEST("Key-25");
-  FAILTEST("Key25");
-  FAILTEST("Key+25");
+  SUCCTEST("Transpose-24");
+  SUCCTEST("Transpose24");
+  SUCCTEST("Transpose +24");
+  FAILTEST("Transpose-25");
+  FAILTEST("Transpose25");
+  FAILTEST("Transpose+25");
 
   FAILTEST("SysEx abc");
   FAILTEST("SysEx f0h,,f7h");
@@ -161,12 +163,29 @@ void param_test(){
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
 	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,0eh,0fh,"
-	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,f7h"); // 126 bytes 
+	   "00h,01h,02h,03h,04h,05h,06h,07h,08h,09h,0ah,0bh,0ch,0dh,f7h"); // 127 bytes 
 
   SUCCTEST("Copyright\"copyright name\"");
   SUCCTEST("TrackName    \n\"track name\"");
   FAILTEST("Copyright\"copyright name");
   FAILTEST("TrackName track name\"");
+
+
+  SUCCTEST("Key ,,,,,,");
+  SUCCTEST("Key 1,-1,1,-1,0,-1,1");
+  FAILTEST("Key -1,1,-1,0,-1,1");
+  SUCCTEST("Key 1,-,+1,-1,0,-1,1"); // warning
+  FAILTEST("Key ++1,,,,,,"); 
+  FAILTEST("Key --1,,,,,,"); 
+  FAILTEST("Key --,,,,,,"); 
+
+
+  SUCCTEST("{c}d");
+  FAILTEST("c}d");
+  FAILTEST("{{c");
+  FAILTEST("{cTR2}d");
+
+
 
 }
 
@@ -196,7 +215,7 @@ int main(int argc, char *argv[]){
   //  mmc_parse_mml_string(m, "y7,100 cde y7,50 cde", "c.mid");
 //  mmc_parse_mml_string(m, "v10 c0d", "c.mid");
 //  mmc_parse_mml_string(m, "$a", "c.mid");
-  mmc_parse_mml_string(m, "SysEx f0h,11h,f7h c", "c.mid");
+  mmc_parse_mml_string(m, "{g>d}c", "c.mid");
   //  mmc_parse_mml_string(m, "$b35$s38 TR10 #rhythm b", "c.mid");
   //mmc_parse_mml_file(m, "a.mml", "c.mid");
   printf("--log--\n");

@@ -40,6 +40,14 @@ typedef struct {
   int sign;
 } param_t;
 
+typedef struct {
+  int timestamp;
+  int octave;
+} mmc_brace_t;
+
+#define MMC_NOTE_MAX 16
+#define MMC_BRACKET_NEST_MAX 16
+#define MMC_BRACE_NEST_MAX 16
 /*
  * track information structure
  */
@@ -49,6 +57,8 @@ typedef struct {
   int gate;
   float length;
   int velocity;
+  int brace_stack_index;
+  mmc_brace_t brace_state[MMC_BRACE_NEST_MAX];
 } track_t;
 
 
@@ -58,8 +68,6 @@ typedef struct {
   int current_repeat;
 } mmc_bracket_t;
 
-#define MMC_NOTE_MAX 16
-#define MMC_BRACKET_NEST_MAX 16
 
 typedef struct {
   smf0_t *smf0;
@@ -78,6 +86,7 @@ typedef struct {
   int bracket_skipping;
   int bracket_nest_level_during_skipping;
   int global_key;
+  int global_keysig[7];// abcdefg
 } mmc_t;
 
 mmc_t *mmc_create();

@@ -56,6 +56,7 @@ enum {
   kTokenProgramChange,
 
   kTokenKey,
+  kTokenTranspose,
   kTokenSysEx,
   
   kTokenOctave,
@@ -77,6 +78,9 @@ enum {
   kTokenBracketStart,
   kTokenBracketEnd,
   kTokenColon,
+
+  kTokenBraceStart,
+  kTokenBraceEnd,
 
 };
 

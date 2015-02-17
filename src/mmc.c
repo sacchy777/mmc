@@ -313,7 +313,7 @@ void mmc_save(mmc_t *m, const char *filename){
 /***************************************************************
  * 
  ****************************************************************/
-static int mmc_parse_sharp(mmc_t *m, int *value){
+static int mmc_parse_sharp(mmc_t *m, int *value, int *natural){
   token_t *t;
   t = lex_get_token(m->lex, &m->lex_index, 0);
   if(!t) return 0;
@@ -323,6 +323,10 @@ static int mmc_parse_sharp(mmc_t *m, int *value){
   }
   if(t->type == kTokenMinus){
     *value = -1;
+    return 1;
+  }
+  if(t->type == kTokenNatural){
+    *natural = 1;
     return 1;
   }
   return 0;
@@ -378,7 +382,9 @@ static int mmc_parse_note(mmc_t *m){
 
   int key = 0;
   int sharp = 0;
-  int temp_int;
+  int temp_int = 0;
+  int temp_natural = 0;
+  int natural = 0;
   double length = 0;
   double temp_double;
   param_t gate;
@@ -407,11 +413,26 @@ static int mmc_parse_note(mmc_t *m){
   }
   m->lex_index ++;
 
-  while(mmc_parse_sharp(m, &temp_int)){
+  while(mmc_parse_sharp(m, &temp_int, &temp_natural)){
     if(m->debug){printf(" sharp match %d \n", temp_int);}
     sharp += temp_int;
+    if(temp_natural != 0) natural = 1;
     m->lex_index ++;
   }
+
+  if(!natural){
+    switch(t->type){
+    case kTokenNoteC: key += m->global_keysig[2]; break;
+    case kTokenNoteD: key += m->global_keysig[3]; break;
+    case kTokenNoteE: key += m->global_keysig[4]; break;
+    case kTokenNoteF: key += m->global_keysig[5]; break;
+    case kTokenNoteG: key += m->global_keysig[6]; break;
+    case kTokenNoteA: key += m->global_keysig[0]; break;
+    case kTokenNoteB: key += m->global_keysig[1]; break;
+    default: return 0;
+    }
+  }
+
 
   if(mmc_parse_length_internal(m, &temp_double)){
     if(m->debug){printf(" length match %f\n", temp_double);}
@@ -940,10 +961,24 @@ static int mmc_parse_cc(mmc_t *m){
 static int mmc_parse_track(mmc_t *m){
   int line = m->current_token->line;
   int column = m->current_token->column;
+  track_t *t = get_track(m);
+
   if(m->debug){
     printf("Parsing track change %d\n", m->current_token->type);
   }
   m->lex_index ++;
+
+  if(m->bracket_stack_index != 0){
+    dlog_add(MMC_MSG_ERROR_BRACKET_NOT_TERMINATED, line+1, column+1);
+    m->error = 1;
+    return -1;
+  }
+
+  if(t->brace_stack_index != 0){
+    dlog_add(MMC_MSG_ERROR_BRACE_NOT_TERMINATED, line+1, column+1);
+    m->error = 1;
+    return -1;
+  }
 
   param_t param;
   if(mmc_token_get_digit_param(m, &param)){
@@ -992,14 +1027,14 @@ static int mmc_parse_program_change(mmc_t *m){
 }
 
 /***************************************************************
- * mm_parse_key
+ * mm_parse_transpose
  ****************************************************************/
-static int mmc_parse_key(mmc_t *m){
+static int mmc_parse_transpose(mmc_t *m){
   int line = m->current_token->line;
   int column = m->current_token->column;
   int key = 0;
   if(m->debug){
-    printf("Parsing key change %d\n", m->current_token->type);
+    printf("Parsing transpose change %d\n", m->current_token->type);
   }
   m->lex_index ++;
 
@@ -1007,7 +1042,7 @@ static int mmc_parse_key(mmc_t *m){
   if(mmc_token_get_digit_param(m, &param)){
     key = param.sign == 0 ? param.value : param.value * param.sign;
     if(key < -24 || key > 24){
-      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "Key", key);
+      dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "Transpose", key);
       m->error = 1;
       return -1;
     }
@@ -1015,19 +1050,56 @@ static int mmc_parse_key(mmc_t *m){
     m->global_key = key;
     return 0;
   }else{
-    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Key number");
+    dlog_add(MMC_MSG_ERROR_PARAM_MISSING, line+1, column+1, "Transpose number");
     m->error = 1;
     return -1;
   }
 }
 
 
+/***************************************************************
+ * mm_parse_key
+ ****************************************************************/
+static int mmc_parse_key(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+  int key = 0;
+  int i;
+  if(m->debug){
+    printf("Parsing key change %d\n", m->current_token->type);
+  }
+  m->lex_index ++;
 
-
-
-
-
-
+  for(i = 0; i < 7; i ++){
+    param_t param;
+    if(mmc_token_get_digit_param(m, &param)){
+      key = param.sign == 0 ? param.value : param.value * param.sign;
+      if(key < -2 || key > 2){
+	dlog_add(MMC_MSG_ERROR_OUTOFRANGE, line+1, column+1, "Key", key);
+	m->error = 1;
+	return -1;
+      }
+      if(m->debug){printf("  keysig %d\n", key);}
+      m->global_keysig[i] = key;
+    }else{
+      if(param.sign != 0){
+	// warnig!
+      }
+      m->global_keysig[i] = 0;
+      if(m->debug){printf("  keysig 0\n");}
+    }
+    if(i == 6){
+      return 0;
+    }
+    if(mmc_token_match(m, kTokenComma) == 0){
+      dlog_add(MMC_MSG_ERROR_SYNTAX, line+1, column+1, "Key ");
+      m->error = 1;
+      return -1;
+    }
+    m->lex_index ++;
+  }
+  return -1;
+}
 
 static int mmc_parse_sysex(mmc_t *m){
   int line = m->current_token->line;
@@ -1199,8 +1271,8 @@ static int mmc_parse_bracket_start(mmc_t *m){
  * mm_parse_bracket_end
  ****************************************************************/
 static int mmc_parse_bracket_end(mmc_t *m){
-  //  int line = m->current_token->line;
-  //  int column = m->current_token->column;
+  int line = m->current_token->line;
+  int column = m->current_token->column;
   if(m->debug){
     printf("Parsing bracket end %d\n", m->current_token->type);
   }
@@ -1212,6 +1284,7 @@ static int mmc_parse_bracket_end(mmc_t *m){
   }
 
   if(m->bracket_stack_index == 0){
+    dlog_add(MMC_MSG_ERROR_BRACKET_NEST_MIN, line+1, column+1);
     // error!
     if(m->debug){printf("bracket end stack empty\n");}
     m->error = 1;
@@ -1227,6 +1300,66 @@ static int mmc_parse_bracket_end(mmc_t *m){
     m->lex_index = b->position;
   if(m->debug){printf("   poped %d\n", m->lex_index);}
   }
+  return 0;
+}
+
+/***************************************************************
+ * mm_parse_brace_start
+ ****************************************************************/
+static int mmc_parse_brace_start(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+
+  if(m->debug){
+    printf("Parsing brace start %d\n", m->current_token->type);
+  }
+
+  track_t *t = get_track(m);
+  mmc_brace_t *b = &t->brace_state[t->brace_stack_index ++];
+  b->timestamp = t->currenttime;
+  b->octave = t->octave;
+  m->lex_index ++;
+
+  if(t->brace_stack_index == MMC_BRACE_NEST_MAX){
+    dlog_add(MMC_MSG_ERROR_BRACE_NEST_MAX, line+1, column+1);
+    m->error = 1;
+  }
+
+  if(m->debug){
+    printf("push timestamp %d\n", b->timestamp);
+  }
+
+  return 0;
+}
+
+/***************************************************************
+ * mm_parse_brace_end
+ ****************************************************************/
+static int mmc_parse_brace_end(mmc_t *m){
+  int line = m->current_token->line;
+  int column = m->current_token->column;
+  if(m->debug){
+    printf("Parsing brace end %d\n", m->current_token->type);
+  }
+
+  track_t *t = get_track(m);
+
+  if(t->brace_stack_index == 0){
+    dlog_add(MMC_MSG_ERROR_BRACE_NEST_MIN, line+1, column+1);
+    if(m->debug){printf("brace end stack empty\n");}
+    m->error = 1;
+    return -1;
+  }
+
+  mmc_brace_t *b = &t->brace_state[t->brace_stack_index - 1];
+  if(m->debug){
+    printf("pop timestamp %d\n", b->timestamp);
+  }
+  t->brace_stack_index --;
+  t->currenttime = b->timestamp;
+  t->octave = b->octave;
+  m->lex_index ++;
+
   return 0;
 }
 
@@ -1288,7 +1421,7 @@ static void add_endoftrack(mmc_t *m){
  ****************************************************************/
 
 static void mmc_parse(mmc_t *m){
-
+  int track;
   while((m->current_token = lex_get_token(m->lex, &m->lex_index, 0) )!= NULL){
     switch(m->current_token->type){
 
@@ -1317,6 +1450,16 @@ static void mmc_parse(mmc_t *m){
     case kTokenCopyright:
       if(m->bracket_skipping){m->lex_index ++; break;}
       mmc_parse_meta_long(m, 0x02);
+      break;
+
+    case kTokenBraceStart:
+      if(m->bracket_skipping){m->lex_index ++; break;}
+      mmc_parse_brace_start(m);
+      break;
+
+    case kTokenBraceEnd:
+      if(m->bracket_skipping){m->lex_index ++; break;}
+      mmc_parse_brace_end(m);
       break;
 
     case kTokenNoteA:
@@ -1390,6 +1533,11 @@ static void mmc_parse(mmc_t *m){
       mmc_parse_program_change(m);
       break;
 
+    case kTokenTranspose:
+      if(m->bracket_skipping){m->lex_index ++; break;}
+      mmc_parse_transpose(m);
+      break;
+
     case kTokenKey:
       if(m->bracket_skipping){m->lex_index ++; break;}
       mmc_parse_key(m);
@@ -1417,10 +1565,18 @@ static void mmc_parse(mmc_t *m){
       break;
     }
   }
+
   if(m->bracket_stack_index != 0){
     dlog_add(MMC_MSG_ERROR_BRACKET_NUMBER_MISMATCH);
     m->error = 1;
   }
+  for(track = 0; track < 16; track ++){
+    if(m->tracks[track].brace_stack_index != 0){
+      dlog_add(MMC_MSG_ERROR_BRACE_NUMBER_MISMATCH, track + 1);
+      m->error = 1;
+    }
+  }
+
   if(m->error){
     dlog_add(MMC_MSG_ERROR_CONVERT_FAILED);
   }else{

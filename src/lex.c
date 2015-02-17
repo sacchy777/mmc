@@ -65,6 +65,7 @@ static const token_type_t keywords[] = {
   {kTokenCopyright, "Copyright"},
 
   {kTokenKey, "Key"},
+  {kTokenTranspose, "Transpose"},
   {kTokenSysEx, "SysEx"},
 
   {kTokenNoteA, "a"},
@@ -103,6 +104,11 @@ static const token_type_t keywords[] = {
   {kTokenBracketStart, "["},
   {kTokenBracketEnd, "]"},
   {kTokenColon, ":"},
+
+
+  {kTokenBraceStart, "{"},
+  {kTokenBraceEnd, "}"},
+
 };
 
 /***************************************************************

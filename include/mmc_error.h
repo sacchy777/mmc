@@ -35,11 +35,17 @@ freely, subject to the following restrictions:
 #define MMC_MSG_ERROR_SYNTAX "[MMC ERROR(%d:%d)] syntax error at %s"
 #define MMC_MSG_ERROR_UNEXPECTED_TOKEN "[MMC ERROR(%d:%d)] unexpected token (%s)"
 #define MMC_MSG_ERROR_BRACKET_NEST_MAX "[MMC ERROR(%d:%d)] bracket nest max reached."
+#define MMC_MSG_ERROR_BRACKET_NEST_MIN "[MMC ERROR(%d:%d)] bracket nest min reached."
+#define MMC_MSG_ERROR_BRACE_NEST_MAX "[MMC ERROR(%d:%d)] brace nest max reached."
+#define MMC_MSG_ERROR_BRACE_NEST_MIN "[MMC ERROR(%d:%d)] brace nest min reached."
+#define MMC_MSG_ERROR_BRACE_NUMBER_MISMATCH "[MMC ERROR] brace number mismatch at Track %d."
 #define MMC_MSG_ERROR_BRACKET_REPEAT_ILLEGAL "[MMC ERROR(%d:%d)] bracket repeat number illegal."
 #define MMC_MSG_ERROR_BRACKET_NUMBER_MISMATCH "[MMC ERROR] bracket number mismatch."
 #define MMC_MSG_ERROR_TOOMANYPARAMS "[MMC ERROR(%d:%d)] %s too many parameters."
 #define MMC_MSG_ERROR_SHORTOFPARAMS "[MMC ERROR(%d:%d)] %s short of parameters."
 #define MMC_MSG_ERROR_INVALIDPARAMS "[MMC ERROR(%d:%d)] %s invalid parameter values."
+#define MMC_MSG_ERROR_BRACKET_NOT_TERMINATED "[MMC ERROR(%d:%d)] bracket not terminated."
+#define MMC_MSG_ERROR_BRACE_NOT_TERMINATED "[MMC ERROR(%d:%d)] brace not terminated."
 
 #endif
 

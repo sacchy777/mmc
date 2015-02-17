@@ -47,7 +47,7 @@ namespace Mmcg
             }
             catch (Exception)
             {
-                MessageBox.Show("Failed to kill player", "Debug");
+                //MessageBox.Show("Failed to kill player", "Debug");
             }
 
         }
@@ -139,7 +139,7 @@ namespace Mmcg
                         break;
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     ; // do nothing
                 }
