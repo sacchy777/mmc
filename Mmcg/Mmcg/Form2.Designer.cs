@@ -163,7 +163,6 @@
             this.textBox5.Name = "textBox5";
             this.textBox5.Size = new System.Drawing.Size(210, 22);
             this.textBox5.TabIndex = 11;
-            this.textBox5.Text = "c:\\Program Files (x86)\\YAMAHA\\MidRadio Player\\MidRadio.exe";
             // 
             // label5
             // 
@@ -180,7 +179,6 @@
             this.textBox4.Name = "textBox4";
             this.textBox4.Size = new System.Drawing.Size(160, 22);
             this.textBox4.TabIndex = 9;
-            this.textBox4.Text = "/play /close";
             // 
             // button2
             // 
@@ -198,7 +196,6 @@
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(210, 22);
             this.textBox3.TabIndex = 7;
-            this.textBox3.Text = "c:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe";
             // 
             // label4
             // 
@@ -225,7 +222,6 @@
             this.textBox2.ReadOnly = true;
             this.textBox2.Size = new System.Drawing.Size(160, 22);
             this.textBox2.TabIndex = 4;
-            this.textBox2.Text = "--no-repeat";
             // 
             // label2
             // 
@@ -244,7 +240,6 @@
             this.textBox1.ReadOnly = true;
             this.textBox1.Size = new System.Drawing.Size(210, 22);
             this.textBox1.TabIndex = 1;
-            this.textBox1.Text = "ctplay.exe";
             // 
             // label1
             // 

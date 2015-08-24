@@ -17,7 +17,7 @@ namespace Mmcg
 {
     public partial class Form1 : Form
     {
-        const string Version = "Music Memo Pad 0.0.4";
+        const string Version = "Music Memo Pad 0.1.0(alpha)";
 
         [DllImport("mmc.dll", CallingConvention = CallingConvention.Cdecl)]
         unsafe static extern int mmc_convert(string infilename, string outilename, [Out] StringBuilder msg);
@@ -30,11 +30,49 @@ namespace Mmcg
 
         bool textChanged = false;
         bool onceOpenedOrSaved = false;
-        string currentFilename = "";
-        string currentDirectory = "";
+        //string currentFilename = "";
+        //string currentDirectory = "";
 
         System.Diagnostics.Process player;
         bool playing = false;
+
+        class Configuration
+        {
+            public string currentFilename = "";
+            public string currentDirectory = "";
+            public string [] players;
+            public string [] args;
+            public bool loaded = false;
+            public Configuration()
+            {
+                players = new string[4];
+                args = new string[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    players[i] = "";
+                    args[i] = "";
+                }
+            }
+            public void load()
+            {
+                if (File.Exists(System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\test.ini"))
+                {
+                    //MessageBox.Show("found test.ini", "Debug");
+                }
+                else
+                {
+//                    MessageBox.Show(System.IO.Path.GetDirectoryName(
+//                        Application.ExecutablePath), "\\\\\\\");
+                }
+                // de-serialize to be implemented
+            }
+            public void save()
+            {
+                // serialize to be implemented
+            }
+        }
+
+        Configuration config;
 
         private void close_player()
         {
@@ -53,6 +91,7 @@ namespace Mmcg
         }
 
         private Form2 form2;
+        private Form3 form3 = null;
         private HelpForm helpForm;
 
 
@@ -74,6 +113,33 @@ namespace Mmcg
             toolStripStatusLabel1.Text = "("+(line+1)+","+(column+1)+")";
         }
 
+        readonly string[] search_dirs = { System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\", @"c:\Program Files (x86)\", @"c:\Program Files\" };
+        readonly string [] filenames = {"ctplay.exe", @"Windows Media Player\wmplayer.exe" };
+        readonly string[] args = { "--no-repeat", "/play /close" };
+        private void setForm2DefaultPlayers(Form2 f)
+        {
+            int id = 1;
+            foreach (string dir in search_dirs)
+            {
+                for (int i = 0; i < filenames.Length; i++)
+                {
+                    if (File.Exists(dir + filenames[i]) && id < 4)
+                    {
+                        f.setPlayer(id, dir + filenames[i], args[i]);
+                        id++;
+//                        MessageBox.Show("Found:" + dir + filenames[i], "Debug");
+                    }
+                }
+            }
+            
+            //f.setPlayer(1, "ctplay.exe", "--no-repeat");
+            //f.setPlayer(2, @"c:\Program Files (x86)\Windows Media Player\wmplayer.exe", "/play /close");
+            //f.setPlayer(3, @"c:\Program Files (x86)\YAMAHA\MidRadio Player\MidRadio.exe", "");
+            //f.setPlayer(4, "", "");
+             
+        }
+
+
         public Form1(string[] args)
         {
             InitializeComponent();
@@ -84,19 +150,28 @@ namespace Mmcg
             host.Child = te;
             this.Controls.Add(host);
             */
+            this.StartPosition = FormStartPosition.CenterScreen;
+            config = new Configuration();
             form2 = new Form2();
             form2.Owner = this;
+
+            setForm2DefaultPlayers(form2);
 
             updateComboBox();
             toolStripComboBox1.SelectedIndex = 0;
             updateStatusBar();
 
-            currentFilename = "Untitled.mmp";
-            currentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
 
             if (args.Length == 1)
             {
                 loadFile(args[0]);
+            }
+            else
+            {
+                config.load();
+//                loadFile(config.currentFilename);
+                config.currentFilename = "Untitled.mmp";
+                config.currentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
             }
         }
 
@@ -184,12 +259,13 @@ namespace Mmcg
         {
             StringBuilder buf = new StringBuilder(256);
             mmc_version(buf);
-            MessageBox.Show(Version + "\n" + buf.ToString() + "\nCopyright (c) 2013 sada.gussy (sada dot gussy at gmail dot com)");
+            MessageBox.Show(Version + "\n" + buf.ToString() + "\nCopyright (c) 2013 sada.gussy (https://github.com/sadagussy)");
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             close_player();
+            config.save();
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -209,13 +285,13 @@ namespace Mmcg
         private void loadFile(string filename)
         {
             StreamReader sr = new StreamReader(filename, true);
-            currentFilename = filename;
-            currentDirectory = Path.GetDirectoryName(filename);
+            config.currentFilename = filename;
+            config.currentDirectory = Path.GetDirectoryName(filename);
 //            MessageBox.Show("dir="+currentDirectory,"dir");
             textBox1.Text = sr.ReadToEnd();
             onceOpenedOrSaved = true;
             textChanged = false;
-            this.Text = Version + " " + currentFilename;
+            this.Text = Version + " " + config.currentFilename;
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -230,11 +306,11 @@ namespace Mmcg
                 using (Stream fileStream = openFileDialog1.OpenFile())
                 {
                     StreamReader sr = new StreamReader(fileStream, true);
-                    currentFilename = openFileDialog1.FileName;
+                    config.currentFilename = openFileDialog1.FileName;
                     textBox1.Text = sr.ReadToEnd();
                     onceOpenedOrSaved = true;
                     textChanged = false;
-                    this.Text = Version + " " + currentFilename;
+                    this.Text = Version + " " + config.currentFilename;
                 }
             }
         }
@@ -243,15 +319,15 @@ namespace Mmcg
         {
             if (onceOpenedOrSaved)
             {
-                using (Stream fileStream = new FileStream(currentFilename, FileMode.Create))
+                using (Stream fileStream = new FileStream(config.currentFilename, FileMode.Create))
                 using (StreamWriter sr = new StreamWriter(fileStream))
                 {
                     sr.Write(textBox1.Text);
                 }
                 textChanged = false;
                 onceOpenedOrSaved = true;
-                currentFilename = saveFileDialog1.FileName;
-                this.Text = Version + " " + currentFilename;
+                config.currentFilename = saveFileDialog1.FileName;
+                this.Text = Version + " " + config.currentFilename;
             }
             else
             {
@@ -262,8 +338,8 @@ namespace Mmcg
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             saveFileDialog1.Title = "Save As";
-            saveFileDialog1.InitialDirectory = currentDirectory;
-            saveFileDialog1.FileName = currentFilename;
+            saveFileDialog1.InitialDirectory = config.currentDirectory;
+            saveFileDialog1.FileName = config.currentFilename;
             saveFileDialog1.Filter = "MML file(.mmp)|*.mmp|Text file|*.txt|All files(*.*)|*.*";
             if (saveFileDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -274,8 +350,8 @@ namespace Mmcg
                 }
                 textChanged = false;
                 onceOpenedOrSaved = true;
-                currentFilename = saveFileDialog1.FileName;
-                this.Text = Version + " " + currentFilename;
+                config.currentFilename = saveFileDialog1.FileName;
+                this.Text = Version + " " + config.currentFilename;
             }
         }
 
@@ -283,12 +359,11 @@ namespace Mmcg
         {
             if (confirmDiscardOkay() == false) return;
             textBox1.Text = "";
-            currentFilename = "";
+            config.currentFilename = "";
         }
 
         private void closeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!confirmDiscardOkay()) return;
             this.Close();
         }
 
@@ -363,12 +438,17 @@ namespace Mmcg
 
         private void findToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            if (form3 == null || form3.IsDisposed)
+            {
+                form3 = new Form3(this.textBox1);
+                form3.Owner = this;
+                form3.Show();
+            }
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            this.Text = Version + " " + currentFilename + "*";
+            this.Text = Version + " " + config.currentFilename + "*";
             textChanged = true;
         }
 

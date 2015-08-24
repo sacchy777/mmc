@@ -36,6 +36,19 @@ namespace Mmcg
             }
             return "";
         }
+
+        public void setPlayer(int id, string text, string arg)
+        {
+            switch (id)
+            {
+                case 1: textBox1.Text = text; textBox2.Text = arg;  break;
+                case 2: textBox3.Text = text; textBox4.Text = arg; break;
+                case 3: textBox5.Text = text; textBox6.Text = arg; break;
+                case 4: textBox7.Text = text; textBox8.Text = arg; break;
+            }
+        }
+
+
         public string getArguments(int id)
         {
             switch (id)
@@ -44,8 +57,8 @@ namespace Mmcg
                 case 2: return textBox4.Text;
                 case 3: return textBox6.Text;
                 case 4: return textBox8.Text;
+                default: return "";
             }
-            return "";
         }
 
         private void label2_Click(object sender, EventArgs e)

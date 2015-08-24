@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{1ED06D55-E404-4F8A-BCB1-F00CBD465879}" Name="Music Memo Pad" Language="1033" Version="0.0.4" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
+  <Product Id="{20036E68-3645-4633-9FCD-C40A294D5B0A}" Name="Music Memo Pad" Language="1033" Version="0.1.0" Manufacturer="sada.gussy" UpgradeCode="ff0e2e66-f976-4c73-bad4-5e098a44f6af">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -10,8 +10,9 @@
 			<ComponentGroupRef Id="ProductComponents" />
       <ComponentRef Id="ApplicationShortcut" />
     </Feature>
-
-
+    <!--
+    <WixVariable Id="WixUIBannerBmp" Value="..\icons\audio-keyboard.ico" />
+    -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="Music Memo Pad" />

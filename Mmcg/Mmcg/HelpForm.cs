@@ -26,7 +26,7 @@ namespace Mmcg
 
         private void HelpForm_Load(object sender, EventArgs e)
         {
-            textBox1.SelectionStart = 0;
+            
         }
 
 
